@@ -1,0 +1,5 @@
+name: Firecraft Server Socket
+main: net.firecraftmc.socket.server.Main
+version: 1.0-ALPHA
+author: Firestar311
+load: STARTUP
