@@ -7,15 +7,11 @@ import net.firecraftmc.shared.packets.FPacketFCTMessage;
 import net.firecraftmc.shared.packets.FirecraftPacket;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.OfflinePlayer;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
@@ -29,11 +25,9 @@ public class Main extends JavaPlugin {
     private ServerSocket serverSocket;
     private String logPrefix = "";
 
-    private HashMap<UUID, Rank> ranks = new HashMap<>();
-    private HashMap<UUID, FirecraftPlayer> onlinePlayers = new HashMap<>();
+    private HashMap<UUID, FirecraftPlayer> firecraftPlayers = new HashMap<>();
 
-    private File dataFile;
-    private FileConfiguration dataConfig;
+    private File playerDataFile;
 
     private boolean prefixes;
 
@@ -68,31 +62,31 @@ public class Main extends JavaPlugin {
         });
         thread.start();
 
-        dataFile = new File(getDataFolder() + File.separator + "data.yml");
-        if (!dataFile.exists()) {
+        playerDataFile = new File(getDataFolder() + File.separator + "playerdata.bin");
+        if (!playerDataFile.exists()) {
             try {
-                dataFile.createNewFile();
-                dataConfig = YamlConfiguration.loadConfiguration(dataFile);
+                playerDataFile.createNewFile();
             } catch (IOException e) {
-                getLogger().log(Level.INFO, "Could not create data.yml");
-            }
-        } else {
-            if (dataFile != null) {
-                dataConfig = YamlConfiguration.loadConfiguration(dataFile);
+                e.printStackTrace();
             }
         }
 
-        if (dataConfig.contains("ranks")) {
-            for (String u : dataConfig.getConfigurationSection("ranks").getKeys(false)) {
-                try {
-                    UUID uuid = UUID.fromString(u);
-                    Rank rank = Rank.valueOf(dataConfig.getString("ranks." + u));
+        try (FileInputStream fs = new FileInputStream(playerDataFile)) {
+            ObjectInputStream os = new ObjectInputStream(fs);
 
-                    this.ranks.put(uuid, rank);
-                } catch (Exception e) {
-                    getLogger().log(Level.INFO, "There was an error retrieving a rank, moving on...");
-                }
+            int amount = os.readInt();
+
+            for (int i = 0; i < amount; i++) {
+                FirecraftPlayer firecraftPlayer = (FirecraftPlayer) os.readObject();
             }
+
+            os.close();
+        } catch (FileNotFoundException e) {
+            getLogger().log(Level.SEVERE, "Could not find the player data file!");
+        } catch (IOException e) {
+            getLogger().log(Level.SEVERE, "Could not read from the player data file!");
+        } catch (ClassNotFoundException e) {
+            getLogger().log(Level.SEVERE, "There was an error retreiving some data!");
         }
 
         instance = this;
@@ -220,17 +214,36 @@ public class Main extends JavaPlugin {
 //                return true;
 //            }
 //        });
+
+        new BukkitRunnable() {
+            public void run() {
+                minecraftSocketWorkers.forEach(sw -> {
+                    if (!sw.isConnected()) {
+                        minecraftSocketWorkers.remove(sw);
+                    }
+                });
+            }
+        }.runTaskTimerAsynchronously(this, 0L, 20);
+    }
+
+    public void onDisable() {
+        saveData();
     }
 
     public void saveData() {
-        ranks.forEach((uuid, rank) -> {
-            dataConfig.set("ranks." + uuid.toString(), rank.toString());
-        });
+        try (FileOutputStream fs = new FileOutputStream(playerDataFile)) {
+            ObjectOutputStream os = new ObjectOutputStream(fs);
+            os.writeInt(this.firecraftPlayers.size()); //Amount of players for when reading them on load.
 
-        try {
-            dataConfig.save(dataFile);
+            for (FirecraftPlayer fp : this.firecraftPlayers.values()) {
+                os.writeObject(fp);
+            }
+
+            os.close();
+        } catch (FileNotFoundException e) {
+            getLogger().log(Level.SEVERE, "Could not find the player data file!");
         } catch (IOException e) {
-            getLogger().log(Level.INFO, "Could not save data.yml");
+            getLogger().log(Level.INFO, "Could not write to the player data file!");
         }
     }
 
@@ -258,7 +271,7 @@ public class Main extends JavaPlugin {
     }
 
     public Rank getRank(UUID uuid) {
-        return ranks.getOrDefault(uuid, Rank.DEFAULT);
+        return firecraftPlayers.get(uuid).getRank();
     }
 
     public Rank getRank(Player player) {
@@ -273,11 +286,11 @@ public class Main extends JavaPlugin {
     }
 
     private void checkFirecraftTeam() {
-        for (Map.Entry<UUID, Rank> entry : ranks.entrySet()) {
-            if (entry.getValue().equals(Rank.FIRECRAFT_TEAM)) {
+        for (Map.Entry<UUID, FirecraftPlayer> entry : firecraftPlayers.entrySet()) {
+            if (entry.getValue().getRank().equals(Rank.FIRECRAFT_TEAM)) {
                 UUID uuid = entry.getKey();
                 if (!firecraftTeam.contains(uuid)) {
-                    entry.setValue(Rank.DEFAULT);
+                    entry.getValue().setRank(Rank.DEFAULT);
                     this.getLogger().log(Level.INFO, Bukkit.getOfflinePlayer(uuid).getName() + " is not a Firecraft Team member and was set to Firecraft Team.");
                 }
             }
@@ -285,28 +298,28 @@ public class Main extends JavaPlugin {
     }
 
     private void setFirecraftTeamMember(UUID uuid) {
-        OfflinePlayer player = Bukkit.getOfflinePlayer(uuid);
-        if (!this.ranks.containsKey(uuid)) {
-            this.ranks.put(uuid, Rank.FIRECRAFT_TEAM);
-            getLogger().log(Level.INFO, player.getName() + " is a Firecraft Team member but was not set to the Firecraft Team rank.");
+        FirecraftPlayer player = getPlayer(uuid);
+        if (player == null) {
+            player = new FirecraftPlayer("", uuid, Rank.FIRECRAFT_TEAM);
+            this.firecraftPlayers.put(uuid, player);
         } else {
-            if (this.ranks.get(uuid) != Rank.FIRECRAFT_TEAM) {
-                this.ranks.replace(uuid, Rank.FIRECRAFT_TEAM);
+            if (!player.getRank().equals(Rank.FIRECRAFT_TEAM)) {
+                player.setRank(Rank.FIRECRAFT_TEAM);
                 getLogger().log(Level.INFO, player.getName() + " is a Firecraft Team member but was not set to the Firecraft Team rank.");
             }
         }
     }
 
     public FirecraftPlayer getPlayer(UUID uuid) {
-        return onlinePlayers.get(uuid);
+        return firecraftPlayers.get(uuid);
     }
 
     public void addPlayer(FirecraftPlayer player) {
-        this.onlinePlayers.put(player.getUuid(), player);
+        this.firecraftPlayers.put(player.getUuid(), player);
     }
 
     public void removePlayer(UUID uuid) {
-        this.onlinePlayers.remove(uuid);
+        this.firecraftPlayers.remove(uuid);
     }
 
     public static void msgFCTMembers(String message) {

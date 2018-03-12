@@ -2,6 +2,7 @@ package net.firecraftmc.socket.server;
 
 import net.firecraftmc.shared.classes.FirecraftConnection;
 import net.firecraftmc.shared.classes.FirecraftPlayer;
+import net.firecraftmc.shared.enums.Rank;
 import net.firecraftmc.shared.packets.*;
 
 import java.io.IOException;
@@ -34,10 +35,13 @@ public class MinecraftSocketWorker extends Thread {
                 break;
             } else if (packet instanceof FPacketServerPlayerJoin) {
                 FPacketServerPlayerJoin sPJ = (FPacketServerPlayerJoin) packet;
-                FirecraftPlayer player = new FirecraftPlayer(name, sPJ.getUuid(), plugin.getRank(sPJ.getUuid()));
+                FirecraftPlayer player = plugin.getPlayer(sPJ.getUuid());
+                if (player == null) {
+                    player = new FirecraftPlayer(name, sPJ.getUuid(), Rank.DEFAULT);
+                    plugin.addPlayer(player);
+                }
                 FPacketPlayerJoin nPacket = new FPacketPlayerJoin(sPJ.getServer(), player);
                 plugin.sendToAll(nPacket);
-                plugin.addPlayer(player);
                 continue;
             }
 
@@ -61,5 +65,9 @@ public class MinecraftSocketWorker extends Thread {
 
     public String getServerName() {
         return name;
+    }
+
+    public boolean isConnected() {
+        return socket.isConnected();
     }
 }
