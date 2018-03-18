@@ -62,6 +62,7 @@ public class Main extends JavaPlugin {
         //int port = this.getConfig().getInt("port");
         int port = 1234;
         this.logPrefix = Utils.color(getConfig().getString("logprefix"));
+        getLogger().log(Level.INFO, "Starting the thread used for the socket.");
         Thread thread = new Thread(() -> {
             getLogger().log(Level.INFO, "Creating a ServerSocket on port " + port);
             try {
@@ -71,7 +72,7 @@ public class Main extends JavaPlugin {
                 while ((socket = serverSocket.accept()) != null) {
                     MinecraftSocketWorker worker = new MinecraftSocketWorker(this, socket);
                     worker.start();
-                    getLogger().log(Level.INFO, "Recieved connection from: " + socket);
+                    getLogger().log(Level.INFO, "Received connection from: " + socket);
                     minecraftSocketWorkers.add(worker);
                 }
             } catch (Exception e) {
@@ -83,6 +84,7 @@ public class Main extends JavaPlugin {
         playerDataTempFile = new File(getDataFolder() + File.separator + "playerdata.yml");
 
         if (!yamlStorage) {
+            getLogger().log(Level.INFO, "Loading data from the bin file.");
             try (FileInputStream fs = new FileInputStream(playerDataFile)) {
                 ObjectInputStream os = new ObjectInputStream(fs);
 
@@ -99,9 +101,11 @@ public class Main extends JavaPlugin {
             } catch (IOException e) {
                 getLogger().log(Level.SEVERE, "Could not read from the player data file!");
             } catch (ClassNotFoundException e) {
-                getLogger().log(Level.SEVERE, "There was an error retreiving some data!");
+                getLogger().log(Level.SEVERE, "There was an error retrieving some data!");
             }
+            getLogger().log(Level.INFO, "Successfully loaded all data.");
         } else {
+            getLogger().log(Level.INFO, "Loading data from the yaml file.");
             playerDataTempConfig = YamlConfiguration.loadConfiguration(playerDataTempFile);
             if (playerDataTempConfig.contains("players")) {
                 for (String u : playerDataTempConfig.getConfigurationSection("players").getKeys(false)) {
@@ -114,10 +118,10 @@ public class Main extends JavaPlugin {
                     this.firecraftPlayers.put(uuid, firecraftPlayer);
                 }
             }
+            getLogger().log(Level.INFO, "Successfully loaded all data.");
         }
 
-        instance = this;
-
+        getLogger().log(Level.INFO, "Starting the Firecraft Team runnable.");
         new BukkitRunnable() {
             public void run() {
                 setFirecraftTeamMember(firestar311);
@@ -129,6 +133,7 @@ public class Main extends JavaPlugin {
             }
         }.runTaskTimerAsynchronously(this, 0, 20 * 60);
 
+        getLogger().log(Level.INFO, "Starting the socket worker check runnable");
         new BukkitRunnable() {
             public void run() {
                 minecraftSocketWorkers.forEach(sw -> {
@@ -139,6 +144,8 @@ public class Main extends JavaPlugin {
                 });
             }
         }.runTaskTimerAsynchronously(this, 0L, 20);
+
+        getLogger().log(Level.INFO, "Successfully loaded the plugin.");
     }
 
     public void onDisable() {
@@ -147,11 +154,14 @@ public class Main extends JavaPlugin {
         this.saveConfig();
     }
 
-    public void saveData() {
+    private void saveData() {
         if (yamlStorage) {
             if (!playerDataTempFile.exists()) {
                 try {
-                    playerDataTempFile.createNewFile();
+                    boolean created = playerDataTempFile.createNewFile();
+                    if (!created) {
+                        getLogger().log(Level.INFO, "The Temp player data file was not created.");
+                    }
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
