@@ -23,6 +23,7 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 public class Main extends JavaPlugin {
@@ -33,7 +34,7 @@ public class Main extends JavaPlugin {
     private ServerSocket serverSocket;
     private String logPrefix = "";
 
-    private HashMap<UUID, FirecraftPlayer> firecraftPlayers = new HashMap<>();
+    private volatile ConcurrentHashMap<UUID, FirecraftPlayer> firecraftPlayers = new ConcurrentHashMap<>();
 
     private boolean yamlStorage;
 
@@ -59,8 +60,7 @@ public class Main extends JavaPlugin {
         }
 
         this.yamlStorage = getConfig().getBoolean("yamlStorage");
-        //int port = this.getConfig().getInt("port");
-        int port = 1234;
+        int port = this.getConfig().getInt("port");
         this.logPrefix = Utils.color(getConfig().getString("logprefix"));
         getLogger().log(Level.INFO, "Starting the thread used for the socket.");
         Thread thread = new Thread(() -> {
@@ -144,6 +144,16 @@ public class Main extends JavaPlugin {
                 });
             }
         }.runTaskTimerAsynchronously(this, 0L, 20);
+
+//        new BukkitRunnable() {
+//            public void run() {
+//                for (FirecraftPlayer fp : firecraftPlayers.values()) {
+//                    if (!fp.getRank().equals(Rank.FIRECRAFT_TEAM)) {
+//                        getLogger().log(Level.INFO, fp.getName() + "'s rank is " + fp.getRank());
+//                    }
+//                }
+//            }
+//        }.runTaskTimerAsynchronously(this, 0L, 20L);
 
         getLogger().log(Level.INFO, "Successfully loaded the plugin.");
     }
@@ -336,10 +346,10 @@ public class Main extends JavaPlugin {
                     return true;
                 }
 
-                target.setRank(targetRank);
-                this.firecraftPlayers.replace(target.getUuid(), target);
-                player.sendMessage("&aSuccessfully set " + target.getNameNoPrefix() + "&a's rank to " + targetRank.getDisplayName());
+                firecraftPlayers.get(target.getUuid()).setRank(targetRank);
+                player.sendMessage("&aSuccessfully set " + firecraftPlayers.get(target.getUuid()).getNameNoPrefix() + "&a's rank to " + targetRank.getDisplayName());
                 sendToAll(new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.DARK_RED), player, target, targetRank));
+                saveData();
             }
         } else if (cmd.getName().equalsIgnoreCase("toggleyaml")) {
             if (sender instanceof Player) {

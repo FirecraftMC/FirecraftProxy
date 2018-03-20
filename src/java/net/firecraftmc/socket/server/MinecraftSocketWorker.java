@@ -8,6 +8,7 @@ import net.firecraftmc.shared.packets.*;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.logging.Level;
 
 public class MinecraftSocketWorker extends Thread {
 
@@ -17,7 +18,7 @@ public class MinecraftSocketWorker extends Thread {
 
     private FirecraftConnection connection;
 
-    public MinecraftSocketWorker(Main main, Socket socket) {
+    MinecraftSocketWorker(Main main, Socket socket) {
         this.plugin = main;
         this.socket = socket;
         this.connection = new FirecraftConnection(socket);
@@ -69,54 +70,17 @@ public class MinecraftSocketWorker extends Thread {
                 FPacketPlayerJoin nPacket = new FPacketPlayerJoin(sPJ.getServer(), player);
                 plugin.sendToAll(nPacket);
                 continue;
-            } else if (packet instanceof FPacketStaffChatMessage) {
-                FPacketStaffChatMessage staffChatMessage = (FPacketStaffChatMessage) packet;
-                String format = "&8[&dS&8] &8[<server>&8] §r<displayname>§8: &d<message>";
-                format = format.replace("<server>", staffChatMessage.getServer().toString());
-                format = format.replace("<displayname>", staffChatMessage.getPlayer().getNameNoPrefix());
-                format = format.replace("<message>", staffChatMessage.getMessage());
-                String finalFormat = format;
-                plugin.getPlayers().forEach(firecraftPlayer -> {
-                    if (firecraftPlayer.getRank().equals(Rank.HELPER) || firecraftPlayer.getRank().isHigher(Rank.HELPER)) {
-                        firecraftPlayer.sendMessage(finalFormat);
-                    }
-                });
-            } else if (packet instanceof FPacketStaffChatStaffJoin) {
-                FPacketStaffChatStaffJoin staffChatStaffJoin = (FPacketStaffChatStaffJoin) packet;
-                String format = "&8[&dS&8] &8[<server>&8] §r<displayname> &d<message>";
-                format = format.replace("<server>", staffChatStaffJoin.getServer().toString());
-                format = format.replace("<displayname>", staffChatStaffJoin.getPlayer().getNameNoPrefix());
-                format = format.replace("<message>", "joined");
-                String finalFormat = format;
-                plugin.getPlayers().forEach(firecraftPlayer -> {
-                    if (firecraftPlayer.getRank().equals(Rank.HELPER) || firecraftPlayer.getRank().isHigher(Rank.HELPER)) {
-                        firecraftPlayer.sendMessage(finalFormat);
-                    }
-                });
-            } else if (packet instanceof FPacketStaffChatStaffQuit) {
-                FPacketStaffChatStaffQuit staffChatStaffQuit = (FPacketStaffChatStaffQuit) packet;
-                String format = "&8[&dS&8] &8[<server>&8] §r<displayname> &d<message>";
-                format = format.replace("<server>", staffChatStaffQuit.getServer().toString());
-                format = format.replace("<displayname>", staffChatStaffQuit.getPlayer().getNameNoPrefix());
-                format = format.replace("<message>", "left");
-                String finalFormat = format;
-                plugin.getPlayers().forEach(firecraftPlayer -> {
-                    if (firecraftPlayer.getRank().equals(Rank.HELPER) || firecraftPlayer.getRank().isHigher(Rank.HELPER)) {
-                        firecraftPlayer.sendMessage(finalFormat);
-                    }
-                });
-                plugin.updatePlayer(staffChatStaffQuit.getPlayer());
             }
 
             plugin.sendToAll(packet);
         }
     }
 
-    public void send(FirecraftPacket packet) {
+    void send(FirecraftPacket packet) {
         connection.sendPacket(packet);
     }
 
-    public void disconnect() {
+    private void disconnect() {
         connection.close();
         try {
             this.socket.close();
@@ -130,7 +94,7 @@ public class MinecraftSocketWorker extends Thread {
         return server;
     }
 
-    public boolean isConnected() {
+    boolean isConnected() {
         return socket.isConnected();
     }
 }
