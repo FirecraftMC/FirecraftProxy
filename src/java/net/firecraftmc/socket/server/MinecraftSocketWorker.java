@@ -1,10 +1,13 @@
 package net.firecraftmc.socket.server;
 
-import net.firecraftmc.shared.classes.FirecraftConnection;
-import net.firecraftmc.shared.classes.FirecraftPlayer;
-import net.firecraftmc.shared.classes.FirecraftServer;
+import net.firecraftmc.shared.classes.*;
 import net.firecraftmc.shared.enums.Rank;
 import net.firecraftmc.shared.packets.*;
+import net.firecraftmc.shared.packets.staffchat.FPStaffChatJoin;
+import net.firecraftmc.shared.packets.staffchat.FPStaffChatMessage;
+import net.firecraftmc.shared.packets.staffchat.FPStaffChatQuit;
+import org.bukkit.Bukkit;
+import org.bukkit.entity.Player;
 
 import java.io.IOException;
 import java.net.Socket;
@@ -26,22 +29,18 @@ public class MinecraftSocketWorker extends Thread {
 
     public void run() {
         FirecraftPacket packet;
-        while (connection.isOpen()) {
+        while (connection != null && connection.isOpen()) {
             packet = connection.readPacket();
-            try {
-                Thread.sleep(1);
-            } catch (InterruptedException e) {
-                return;
-            }
+            System.out.println(packet);
             if (packet instanceof FPacketServerConnect) {
                 FPacketServerConnect serverConnect = (FPacketServerConnect) packet;
                 this.server = packet.getServer();
                 String format = "&8[&dS&8] &8[<server>&8] &d<message>";
                 format = format.replace("<server>", serverConnect.getServer().toString());
-                format = format.replace("<message>", "has started.");
+                format = format.replace("<message>", serverConnect.getServer().getName() + " has started.");
                 String finalFormat = format;
                 plugin.getPlayers().forEach(fp -> {
-                    if (fp.getRank().equals(Rank.HELPER) || fp.getRank().isHigher(Rank.HELPER)) {
+                    if (Rank.isStaff(fp.getRank())) {
                         fp.sendMessage(finalFormat);
                     }
                 });
@@ -50,10 +49,10 @@ public class MinecraftSocketWorker extends Thread {
                 this.server = packet.getServer();
                 String format = "&8[&dS&8] &8[<server>&8] &d<message>";
                 format = format.replace("<server>", serverDisconnect.getServer().toString());
-                format = format.replace("<message>", "has stopped.");
+                format = format.replace("<message>", serverDisconnect.getServer().getName() + " has stopped.");
                 String finalFormat = format;
                 plugin.getPlayers().forEach(fp -> {
-                    if (fp.getRank().equals(Rank.HELPER) || fp.getRank().isHigher(Rank.HELPER)) {
+                    if (Rank.isStaff(fp.getRank())) {
                         fp.sendMessage(finalFormat);
                     }
                 });
@@ -70,6 +69,57 @@ public class MinecraftSocketWorker extends Thread {
                 FPacketPlayerJoin nPacket = new FPacketPlayerJoin(sPJ.getServer(), player);
                 plugin.sendToAll(nPacket);
                 continue;
+            } else if (packet instanceof FPStaffChatJoin) {
+                FPStaffChatJoin staffJoin = (FPStaffChatJoin) packet;
+                FirecraftPlayer player = staffJoin.getPlayer();
+                if (player.getRank().equals(Rank.FIRECRAFT_TEAM)) {
+                    String format = ChatUtils.formatFCTJoin(staffJoin.getServer(), staffJoin.getPlayer());
+
+                    for (FirecraftPlayer p : plugin.getPlayers()) {
+                        if (p.getRank().equals(Rank.FIRECRAFT_TEAM)) {
+                            p.sendMessage(format);
+                        }
+                    }
+                } else {
+                    if (!player.getRank().equals(plugin.getRank(player.getUuid()))) {
+                        staffJoin.getPlayer().setRank(plugin.getRank(player.getUuid()));
+                    }
+                    String format = ChatUtils.formatStaffJoin(staffJoin.getServer(), staffJoin.getPlayer());
+                    for (FirecraftPlayer p : plugin.getPlayers()) {
+                        if (Rank.isStaff(p.getRank())) {
+                            p.sendMessage(format);
+                        }
+                    }
+                }
+            } else if (packet instanceof FPStaffChatQuit) {
+                FPStaffChatQuit staffQuit = (FPStaffChatQuit) packet;
+                FirecraftPlayer player = staffQuit.getPlayer();
+                if (staffQuit.getPlayer().getRank().equals(Rank.FIRECRAFT_TEAM)) {
+                    String format = ChatUtils.formatFCTLeave(staffQuit.getServer(), staffQuit.getPlayer());
+
+                    for (FirecraftPlayer p : plugin.getPlayers()) {
+                        if (p.getRank().equals(Rank.FIRECRAFT_TEAM)) {
+                            p.sendMessage(format);
+                        }
+                    }
+                } else {
+                    if (!player.getRank().equals(plugin.getRank(player.getUuid()))) {
+                        staffQuit.getPlayer().setRank(plugin.getRank(player.getUuid()));
+                    }
+                    String format = ChatUtils.formatStaffLeave(staffQuit.getServer(), staffQuit.getPlayer());
+                    for (Player p : Bukkit.getOnlinePlayers()) {
+                        p.sendMessage(Utils.color(format));
+                    }
+                }
+            } else if (packet instanceof FPStaffChatMessage) {
+                FPStaffChatMessage staffMessage = (FPStaffChatMessage) packet;
+                if (!staffMessage.getPlayer().getRank().equals(plugin.getRank(staffMessage.getPlayer().getUuid()))) {
+                    staffMessage.getPlayer().setRank(plugin.getRank(staffMessage.getPlayer().getUuid()));
+                }
+                String format = ChatUtils.formatStaffMessage(staffMessage.getServer(), staffMessage.getPlayer(), staffMessage.getMessage());
+                for (Player p : Bukkit.getOnlinePlayers()) {
+                    p.sendMessage(Utils.color(format));
+                }
             }
 
             plugin.sendToAll(packet);

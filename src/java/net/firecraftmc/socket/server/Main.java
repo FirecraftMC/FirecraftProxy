@@ -16,6 +16,12 @@ import org.bukkit.command.ConsoleCommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -26,7 +32,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
-public class Main extends JavaPlugin {
+public class Main extends JavaPlugin implements Listener {
 
     private static Main instance;
     private List<MinecraftSocketWorker> minecraftSocketWorkers = new ArrayList<>();
@@ -34,15 +40,13 @@ public class Main extends JavaPlugin {
     private ServerSocket serverSocket;
     private String logPrefix = "";
 
-    private volatile ConcurrentHashMap<UUID, FirecraftPlayer> firecraftPlayers = new ConcurrentHashMap<>();
+    private ConcurrentHashMap<UUID, FirecraftPlayer> firecraftPlayers = new ConcurrentHashMap<>();
 
     private boolean yamlStorage;
 
     private File playerDataFile;
     private File playerDataTempFile;
     private FileConfiguration playerDataTempConfig;
-
-    private boolean prefixes;
 
     private final UUID firestar311 = UUID.fromString("3f7891ce-5a73-4d52-a2ba-299839053fdc");
     private final UUID powercore122 = UUID.fromString("b30f4b1f-4252-45e5-ac2a-1f75ff6f5783");
@@ -82,6 +86,8 @@ public class Main extends JavaPlugin {
         thread.start();
         playerDataFile = new File(getDataFolder() + File.separator + "playerdata.bin");
         playerDataTempFile = new File(getDataFolder() + File.separator + "playerdata.yml");
+
+        this.getServer().getPluginManager().registerEvents(this, this);
 
         if (!yamlStorage) {
             getLogger().log(Level.INFO, "Loading data from the bin file.");
@@ -145,16 +151,6 @@ public class Main extends JavaPlugin {
             }
         }.runTaskTimerAsynchronously(this, 0L, 20);
 
-//        new BukkitRunnable() {
-//            public void run() {
-//                for (FirecraftPlayer fp : firecraftPlayers.values()) {
-//                    if (!fp.getRank().equals(Rank.FIRECRAFT_TEAM)) {
-//                        getLogger().log(Level.INFO, fp.getName() + "'s rank is " + fp.getRank());
-//                    }
-//                }
-//            }
-//        }.runTaskTimerAsynchronously(this, 0L, 20L);
-
         getLogger().log(Level.INFO, "Successfully loaded the plugin.");
     }
 
@@ -166,6 +162,8 @@ public class Main extends JavaPlugin {
 
     private void saveData() {
         if (yamlStorage) {
+            if (playerDataTempFile.exists())  playerDataTempFile.delete();
+
             if (!playerDataTempFile.exists()) {
                 try {
                     boolean created = playerDataTempFile.createNewFile();
@@ -247,13 +245,6 @@ public class Main extends JavaPlugin {
         return getRank(player.getUniqueId());
     }
 
-    public void updateDisplayName(Player player) {
-        if (prefixes)
-            player.setDisplayName(getRank(player).getPrefix() + player.getName() + "§r");
-        else
-            player.setDisplayName(getRank(player).getNoPrefix() + player.getName() + "§r");
-    }
-
     private void checkFirecraftTeam() {
         for (Map.Entry<UUID, FirecraftPlayer> entry : firecraftPlayers.entrySet()) {
             if (entry.getValue().getRank().equals(Rank.FIRECRAFT_TEAM)) {
@@ -294,6 +285,34 @@ public class Main extends JavaPlugin {
     public static void msgFCTMembers(String message) {
         FPacketFCTMessage fctMessage = new FPacketFCTMessage(message);
         instance.sendToAll(fctMessage);
+    }
+
+    @EventHandler
+    public void onPlayerPreJoin(AsyncPlayerPreLoginEvent e) {
+        if (!firecraftPlayers.containsKey(e.getUniqueId())) {
+            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "Only Fireraft Team members can join this server.");
+        } else if (!firecraftPlayers.get(e.getUniqueId()).getRank().equals(Rank.FIRECRAFT_TEAM)){
+            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "Only Firecraft Team members can join this server.");
+        }
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent e) {
+        FirecraftPlayer player = getPlayer(e.getPlayer().getUniqueId());
+        e.setJoinMessage(player.getNameNoPrefix() + " §ejoined the game.");
+    }
+
+    @EventHandler
+    public void onPlayerLeave(PlayerQuitEvent e) {
+        FirecraftPlayer player = getPlayer(e.getPlayer().getUniqueId());
+        e.setQuitMessage(player.getNameNoPrefix() + " §eleft the game.");
+    }
+
+    @EventHandler
+    public void onPlayerChat(AsyncPlayerChatEvent e) {
+        FirecraftPlayer player = getPlayer(e.getPlayer().getUniqueId());
+        player.setDisplayName(player.getRank().getPrefix() + " " + player.getRank().getBaseColor() + player.getName());
+        e.setFormat(player.getDisplayName() + "§8: §f" + e.getMessage());
     }
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -348,8 +367,8 @@ public class Main extends JavaPlugin {
 
                 firecraftPlayers.get(target.getUuid()).setRank(targetRank);
                 player.sendMessage("&aSuccessfully set " + firecraftPlayers.get(target.getUuid()).getNameNoPrefix() + "&a's rank to " + targetRank.getDisplayName());
-                sendToAll(new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.DARK_RED), player, target, targetRank));
                 saveData();
+                sendToAll(new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.DARK_RED), player, target, targetRank));
             }
         } else if (cmd.getName().equalsIgnoreCase("toggleyaml")) {
             if (sender instanceof Player) {
@@ -426,10 +445,44 @@ public class Main extends JavaPlugin {
                 FirecraftPlayer created = new FirecraftPlayer(uuid, rank);
                 player.sendMessage("&aSuccessfully created a profile for " + created.getName());
                 this.firecraftPlayers.put(uuid, created);
-
             } else {
                 sender.sendMessage("§cOnly players can use this command.");
                 return true;
+            }
+        } else if (cmd.getName().equalsIgnoreCase("viewprofile")) {
+            if (sender instanceof Player) {
+                FirecraftPlayer player = firecraftPlayers.get(((Player) sender).getUniqueId());
+                if (player.getRank().equals(Rank.FIRECRAFT_TEAM)) {
+                    if (args.length != 1) {
+                        player.sendMessage("&cInvalid amount of arguments.");
+                        return true;
+                    }
+                    UUID uuid = null;
+                    FirecraftPlayer target = null;
+                    try {
+                        uuid = UUID.fromString(args[0]);
+                        target = getPlayer(uuid);
+                    } catch (Exception e) {
+                        for (FirecraftPlayer p : firecraftPlayers.values()) {
+                            if (p.getName().equalsIgnoreCase(args[0])) {
+                                target = p;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (target == null) {
+                        player.sendMessage("&cCould not find a player with that name/uuid.");
+                        return true;
+                    }
+
+                    player.sendMessage("&6Displaying profile info for " + target.getName());
+                    player.sendMessage("&7Rank: " + target.getRank().getBaseColor() + target.getRank().toString());
+                    player.sendMessage("&7Channel: " + target.getChannel().getColor() + target.getChannel().toString());
+                } else {
+                    player.sendMessage("&cOnly Firecraft Team members can do that.");
+                    return true;
+                }
             }
         }
 

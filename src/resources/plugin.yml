@@ -7,3 +7,4 @@ commands:
         description: Sets the rank of a player
     toggleyaml:
     createprofile:
+    viewprofile:
