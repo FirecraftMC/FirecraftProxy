@@ -20,5 +20,16 @@
       </library>
     </orderEntry>
     <orderEntry type="module" module-name="FirecraftShared" scope="PROVIDED" />
+    <orderEntry type="module-library" scope="PROVIDED">
+      <library>
+        <CLASSES>
+          <root url="jar://$MODULE_DIR$/../../SpigotCoding/BuildTools/spigot-1.8.8.jar!/" />
+        </CLASSES>
+        <JAVADOC />
+        <SOURCES>
+          <root url="jar://$MODULE_DIR$/../../SpigotCoding/BuildTools/spigot-1.8.8.jar!/" />
+        </SOURCES>
+      </library>
+    </orderEntry>
   </component>
 </module>

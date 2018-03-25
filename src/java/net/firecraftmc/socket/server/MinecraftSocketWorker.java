@@ -7,6 +7,7 @@ import net.firecraftmc.shared.packets.staffchat.FPStaffChatJoin;
 import net.firecraftmc.shared.packets.staffchat.FPStaffChatMessage;
 import net.firecraftmc.shared.packets.staffchat.FPStaffChatQuit;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;
 
 import java.io.IOException;
@@ -120,6 +121,13 @@ public class MinecraftSocketWorker extends Thread {
                 for (Player p : Bukkit.getOnlinePlayers()) {
                     p.sendMessage(Utils.color(format));
                 }
+            } else if (packet instanceof FPRequestProfile) {
+                FPRequestProfile profileRequest = (FPRequestProfile) packet;
+
+                FirecraftPlayer profile = plugin.getPlayer(profileRequest.getUniqueId());
+                FPacketSendProfile sendProfile = new FPacketSendProfile(new FirecraftServer("Socket", ChatColor.DARK_RED), profile);
+                this.connection.sendPacket(sendProfile);
+                return;
             }
 
             plugin.sendToAll(packet);
