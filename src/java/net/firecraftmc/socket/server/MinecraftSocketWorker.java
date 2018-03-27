@@ -134,9 +134,7 @@ public class MinecraftSocketWorker extends Thread {
         }
     }
 
-    void send(FirecraftPacket packet) {
-        connection.sendPacket(packet);
-    }
+    void send(FirecraftPacket packet) { connection.sendPacket(packet); }
 
     private void disconnect() {
         connection.close();
@@ -148,11 +146,7 @@ public class MinecraftSocketWorker extends Thread {
         this.connection = null;
     }
 
-    public FirecraftServer getServerName() {
-        return server;
-    }
+    public FirecraftServer getServerName() { return server; }
 
-    boolean isConnected() {
-        return socket.isConnected();
-    }
+    boolean isConnected() { return socket.isConnected(); }
 }
