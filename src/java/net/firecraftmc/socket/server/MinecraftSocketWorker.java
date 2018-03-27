@@ -32,7 +32,6 @@ public class MinecraftSocketWorker extends Thread {
         FirecraftPacket packet;
         while (connection != null && connection.isOpen()) {
             packet = connection.readPacket();
-            System.out.println(packet);
             if (packet instanceof FPacketServerConnect) {
                 FPacketServerConnect serverConnect = (FPacketServerConnect) packet;
                 this.server = packet.getServer();
