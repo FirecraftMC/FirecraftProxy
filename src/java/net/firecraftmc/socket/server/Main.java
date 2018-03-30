@@ -233,16 +233,8 @@ public class Main extends JavaPlugin implements Listener {
         }
     }
 
-    public String getLogPrefix() {
-        return logPrefix;
-    }
-
     public Rank getRank(UUID uuid) {
         return firecraftPlayers.get(uuid).getRank();
-    }
-
-    public Rank getRank(Player player) {
-        return getRank(player.getUniqueId());
     }
 
     private void checkFirecraftTeam() {
@@ -278,16 +270,6 @@ public class Main extends JavaPlugin implements Listener {
         this.firecraftPlayers.put(player.getUuid(), player);
     }
 
-    public void removePlayer(UUID uuid) {
-        this.firecraftPlayers.remove(uuid);
-    }
-
-    public static void msgFCTMembers(String message) {
-        FPacketFCTMessage fctMessage = new FPacketFCTMessage(message);
-        instance.sendToAll(fctMessage);
-    }
-
-    @EventHandler
     public void onPlayerPreJoin(AsyncPlayerPreLoginEvent e) {
         if (!firecraftPlayers.containsKey(e.getUniqueId())) {
             e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "Only Fireraft Team members can join this server.");
@@ -299,13 +281,13 @@ public class Main extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent e) {
         FirecraftPlayer player = getPlayer(e.getPlayer().getUniqueId());
-        e.setJoinMessage(player.getNameNoPrefix() + " §ejoined the game.");
+        e.setJoinMessage(player.getDisplayName() + " §ejoined the game.");
     }
 
     @EventHandler
     public void onPlayerLeave(PlayerQuitEvent e) {
         FirecraftPlayer player = getPlayer(e.getPlayer().getUniqueId());
-        e.setQuitMessage(player.getNameNoPrefix() + " §eleft the game.");
+        e.setQuitMessage(player.getDisplayName() + " §eleft the game.");
     }
 
     @EventHandler
@@ -366,7 +348,7 @@ public class Main extends JavaPlugin implements Listener {
                 }
 
                 firecraftPlayers.get(target.getUuid()).setRank(targetRank);
-                player.sendMessage("&aSuccessfully set " + firecraftPlayers.get(target.getUuid()).getNameNoPrefix() + "&a's rank to " + targetRank.getDisplayName());
+                player.sendMessage("&aSuccessfully set §e" + firecraftPlayers.get(target.getUuid()).getDisplayName() + "&a's rank to " + targetRank.getDisplayName());
                 saveData();
                 sendToAll(new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.DARK_RED), player, target, targetRank));
             }
@@ -443,7 +425,7 @@ public class Main extends JavaPlugin implements Listener {
                 }
 
                 FirecraftPlayer created = new FirecraftPlayer(uuid, rank);
-                player.sendMessage("&aSuccessfully created a profile for " + created.getName());
+                player.sendMessage("&aSuccessfully created a profile for " + created.getDisplayName());
                 this.firecraftPlayers.put(uuid, created);
             } else {
                 sender.sendMessage("§cOnly players can use this command.");
@@ -489,12 +471,7 @@ public class Main extends JavaPlugin implements Listener {
         return true;
     }
 
-
     public Collection<FirecraftPlayer> getPlayers() {
         return firecraftPlayers.values();
-    }
-
-    public void updatePlayer(FirecraftPlayer player) {
-        firecraftPlayers.replace(player.getUuid(), player);
     }
 }
