@@ -1,11 +1,10 @@
 package net.firecraftmc.socket.server;
 
 import net.firecraftmc.shared.classes.*;
+import net.firecraftmc.shared.classes.utils.ChatUtils;
 import net.firecraftmc.shared.enums.Rank;
 import net.firecraftmc.shared.packets.*;
-import net.firecraftmc.shared.packets.staffchat.FPStaffChatJoin;
-import net.firecraftmc.shared.packets.staffchat.FPStaffChatMessage;
-import net.firecraftmc.shared.packets.staffchat.FPStaffChatQuit;
+import net.firecraftmc.shared.packets.staffchat.*;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.entity.Player;

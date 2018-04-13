@@ -2,32 +2,24 @@ package net.firecraftmc.socket.server;
 
 import net.firecraftmc.shared.classes.FirecraftPlayer;
 import net.firecraftmc.shared.classes.FirecraftServer;
-import net.firecraftmc.shared.classes.Utils;
 import net.firecraftmc.shared.enums.Channel;
 import net.firecraftmc.shared.enums.Rank;
 import net.firecraftmc.shared.packets.FPacketRankUpdate;
 import net.firecraftmc.shared.packets.FirecraftPacket;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
-import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.command.*;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.*;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
+import java.net.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -35,11 +27,8 @@ import java.util.logging.Level;
 public class Main extends JavaPlugin implements Listener {
 
     private List<MinecraftSocketWorker> minecraftSocketWorkers = new ArrayList<>();
-
     private ServerSocket serverSocket;
-
     private ConcurrentHashMap<UUID, FirecraftPlayer> firecraftPlayers = new ConcurrentHashMap<>();
-
     private boolean yamlStorage;
 
     private File playerDataFile;
@@ -431,7 +420,7 @@ public class Main extends JavaPlugin implements Listener {
                         player.sendMessage("&cInvalid amount of arguments.");
                         return true;
                     }
-                    UUID uuid = null;
+                    UUID uuid;
                     FirecraftPlayer target = null;
                     try {
                         uuid = UUID.fromString(args[0]);
