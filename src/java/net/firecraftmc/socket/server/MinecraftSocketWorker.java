@@ -62,7 +62,7 @@ public class MinecraftSocketWorker extends Thread {
                 FPacketServerPlayerJoin sPJ = (FPacketServerPlayerJoin) packet;
                 FirecraftPlayer player = plugin.getPlayer(sPJ.getUuid());
                 if (player == null) {
-                    player = new FirecraftPlayer(sPJ.getUuid(), Rank.DEFAULT);
+                    player = new FirecraftPlayer(plugin, sPJ.getUuid(), Rank.DEFAULT);
                     plugin.addPlayer(player);
                 }
                 FPacketPlayerJoin nPacket = new FPacketPlayerJoin(sPJ.getServer(), player);
@@ -115,20 +115,34 @@ public class MinecraftSocketWorker extends Thread {
                 if (!staffMessage.getPlayer().getMainRank().equals(plugin.getRank(staffMessage.getPlayer().getUuid()))) {
                     staffMessage.getPlayer().setMainRank(plugin.getRank(staffMessage.getPlayer().getUuid()));
                 }
-                String format = ChatUtils.formatStaffMessage(staffMessage.getServer(), staffMessage.getPlayer(), staffMessage.getMessage());
-                for (Player p : Bukkit.getOnlinePlayers()) {
-                    p.sendMessage(Utils.color(format));
+                if (!Bukkit.getOnlinePlayers().isEmpty()) {
+                    String format = ChatUtils.formatStaffMessage(staffMessage.getServer(), staffMessage.getPlayer(), staffMessage.getMessage());
+                    for (Player p : Bukkit.getOnlinePlayers()) {
+                        p.sendMessage(Utils.color(format));
+                    }
                 }
             } else if (packet instanceof FPRequestProfile) {
                 FPRequestProfile profileRequest = (FPRequestProfile) packet;
 
                 FirecraftPlayer profile = plugin.getPlayer(profileRequest.getUniqueId());
                 if (profile == null) {
-                    profile = new FirecraftPlayer(profileRequest.getUniqueId(), Rank.DEFAULT);
+                    profile = new FirecraftPlayer(plugin, profileRequest.getUniqueId(), Rank.DEFAULT);
                 }
                 FPacketSendProfile sendProfile = new FPacketSendProfile(new FirecraftServer("Socket", ChatColor.DARK_RED), profile);
                 this.connection.sendPacket(sendProfile);
                 continue;
+            } else if (packet instanceof FPStaffChatSetNick) {
+                FPStaffChatSetNick setNick = ((FPStaffChatSetNick) packet);
+                String format = ChatUtils.formatSetNick(setNick.getServer(), setNick.getPlayer(), setNick.getProfile());
+                for (FirecraftPlayer p : plugin.getPlayers()) {
+                    p.sendMessage(format);
+                }
+            } else if (packet instanceof FPStaffChatResetNick) {
+                FPStaffChatResetNick resetNick = ((FPStaffChatResetNick) packet);
+                String format = ChatUtils.formatResetNick(resetNick.getServer(), resetNick.getPlayer());
+                for (FirecraftPlayer p : plugin.getPlayers()) {
+                    p.sendMessage(format);
+                }
             }
 
             plugin.sendToAll(packet);

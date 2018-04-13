@@ -103,7 +103,7 @@ public class Main extends JavaPlugin implements Listener {
                     String mainPath = "players." + u;
                     Rank rank = Rank.valueOf(playerDataTempConfig.getString(mainPath + ".rank"));
                     Channel channel = Channel.valueOf(playerDataTempConfig.getString(mainPath + ".channel"));
-                    FirecraftPlayer firecraftPlayer = new FirecraftPlayer(uuid, rank);
+                    FirecraftPlayer firecraftPlayer = new FirecraftPlayer(this, uuid, rank);
                     firecraftPlayer.setChannel(channel);
                     this.firecraftPlayers.put(uuid, firecraftPlayer);
                 }
@@ -234,7 +234,7 @@ public class Main extends JavaPlugin implements Listener {
     private void setFirecraftTeamMember(UUID uuid) {
         FirecraftPlayer player = getPlayer(uuid);
         if (player == null) {
-            player = new FirecraftPlayer(uuid, Rank.FIRECRAFT_TEAM);
+            player = new FirecraftPlayer(this, uuid, Rank.FIRECRAFT_TEAM);
             this.firecraftPlayers.put(uuid, player);
         } else {
             if (!player.getMainRank().equals(Rank.FIRECRAFT_TEAM)) {
@@ -405,7 +405,7 @@ public class Main extends JavaPlugin implements Listener {
                     return true;
                 }
 
-                FirecraftPlayer created = new FirecraftPlayer(uuid, rank);
+                FirecraftPlayer created = new FirecraftPlayer(this, uuid, rank);
                 player.sendMessage("&aSuccessfully created a profile for " + created.getDisplayName());
                 this.firecraftPlayers.put(uuid, created);
             } else {
