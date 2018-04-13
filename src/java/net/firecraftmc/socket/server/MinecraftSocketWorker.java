@@ -143,6 +143,18 @@ public class MinecraftSocketWorker extends Thread {
                 for (FirecraftPlayer p : plugin.getPlayers()) {
                     p.sendMessage(format);
                 }
+            } else if (packet instanceof FPacketServerPlayerLeave) {
+                FPacketServerPlayerLeave sPL = ((FPacketServerPlayerLeave) packet);
+                FirecraftPlayer localPlayer = plugin.getPlayer(sPL.getPlayer().getUuid());
+                if (localPlayer == null) {
+                    localPlayer = new FirecraftPlayer(plugin, sPL.getPlayer().getUuid(), Rank.DEFAULT);
+                    plugin.addPlayer(localPlayer);
+                } else {
+                    plugin.addPlayer(sPL.getPlayer());
+                }
+                FPacketPlayerLeave nPacket = new FPacketPlayerLeave(sPL.getServer(), sPL.getPlayer());
+                plugin.sendToAll(nPacket);
+                continue;
             }
 
             plugin.sendToAll(packet);

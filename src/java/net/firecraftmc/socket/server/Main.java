@@ -249,7 +249,11 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     public void addPlayer(FirecraftPlayer player) {
-        this.firecraftPlayers.put(player.getUuid(), player);
+        if (!this.firecraftPlayers.containsKey(player.getUuid())) {
+            this.firecraftPlayers.put(player.getUuid(), player);
+        } else {
+            this.firecraftPlayers.replace(player.getUuid(), player);
+        }
     }
 
     public void onPlayerPreJoin(AsyncPlayerPreLoginEvent e) {
