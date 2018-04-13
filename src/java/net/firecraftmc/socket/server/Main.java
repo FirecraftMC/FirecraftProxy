@@ -25,6 +25,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.*;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
@@ -47,10 +48,9 @@ public class Main extends JavaPlugin implements Listener {
 
     private final UUID firestar311 = UUID.fromString("3f7891ce-5a73-4d52-a2ba-299839053fdc");
     private final UUID powercore122 = UUID.fromString("b30f4b1f-4252-45e5-ac2a-1f75ff6f5783");
-    private final UUID fenixfirementat = UUID.fromString("d1f1514b-463a-46e9-8a64-18a8dad20361");
     private final UUID assassinplayzyt = UUID.fromString("c292df56-5baa-4a11-87a3-cba08ce5f7a6");
     private final UUID jacob_3pot = UUID.fromString("b258795c-c056-4aac-b953-993b930f06a0");
-    private final List<UUID> firecraftTeam = Arrays.asList(firestar311, powercore122, fenixfirementat, assassinplayzyt, jacob_3pot);
+    private final List<UUID> firecraftTeam = Arrays.asList(firestar311, powercore122, assassinplayzyt, jacob_3pot);
 
     public void onEnable() {
         this.saveDefaultConfig();
@@ -65,7 +65,7 @@ public class Main extends JavaPlugin implements Listener {
         Thread thread = new Thread(() -> {
             getLogger().log(Level.INFO, "Creating a ServerSocket on port " + port);
             try {
-                serverSocket = new ServerSocket(port);
+                serverSocket = new ServerSocket(port, 100, InetAddress.getByName("127.0.0.1"));
 
                 Socket socket;
                 while ((socket = serverSocket.accept()) != null) {
@@ -127,7 +127,6 @@ public class Main extends JavaPlugin implements Listener {
             public void run() {
                 setFirecraftTeamMember(firestar311);
                 setFirecraftTeamMember(powercore122);
-                setFirecraftTeamMember(fenixfirementat);
                 setFirecraftTeamMember(assassinplayzyt);
                 setFirecraftTeamMember(jacob_3pot);
                 checkFirecraftTeam();
