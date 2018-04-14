@@ -255,7 +255,8 @@ public class Main extends JavaPlugin implements Listener {
             this.firecraftPlayers.replace(player.getUuid(), player);
         }
     }
-
+    
+    @EventHandler
     public void onPlayerPreJoin(AsyncPlayerPreLoginEvent e) {
         if (!firecraftPlayers.containsKey(e.getUniqueId())) {
             e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "Only Fireraft Team members can join this server.");

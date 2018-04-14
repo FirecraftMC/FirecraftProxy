@@ -155,6 +155,32 @@ public class MinecraftSocketWorker extends Thread {
                 FPacketPlayerLeave nPacket = new FPacketPlayerLeave(sPL.getServer(), sPL.getPlayer());
                 plugin.sendToAll(nPacket);
                 continue;
+            } else if (packet instanceof FPStaffChatVanishToggle) {
+                FPStaffChatVanishToggle toggleVanish = ((FPStaffChatVanishToggle) packet);
+                if (!toggleVanish.getPlayer().getMainRank().equals(plugin.getPlayer(toggleVanish.getPlayer().getUuid()).getMainRank())) {
+                    toggleVanish.getPlayer().setMainRank(plugin.getPlayer(toggleVanish.getPlayer().getUuid()).getMainRank());
+                }
+                String format = ChatUtils.formatVanishToggle(toggleVanish.getServer(), toggleVanish.getPlayer(), toggleVanish.isVanished());
+                if (!plugin.getPlayers().isEmpty()) {
+                    for (FirecraftPlayer p : plugin.getPlayers()) {
+                        if (Rank.isStaff(p.getMainRank())) {
+                            p.sendMessage(format);
+                        }
+                    }
+                }
+            } else if (packet instanceof FPStaffChatVanishToggleOthers) {
+                FPStaffChatVanishToggleOthers toggleVanish = ((FPStaffChatVanishToggleOthers) packet);
+                if (!toggleVanish.getPlayer().getMainRank().equals(plugin.getPlayer(toggleVanish.getPlayer().getUuid()).getMainRank())) {
+                    toggleVanish.getPlayer().setMainRank(plugin.getPlayer(toggleVanish.getPlayer().getUuid()).getMainRank());
+                }
+                String format = ChatUtils.formatVanishToggleOthers(toggleVanish.getServer(), toggleVanish.getPlayer(), toggleVanish.getTarget());
+                if (!plugin.getPlayers().isEmpty()) {
+                    for (FirecraftPlayer p : plugin.getPlayers()) {
+                        if (Rank.isStaff(p.getMainRank())) {
+                            p.sendMessage(format);
+                        }
+                    }
+                }
             }
 
             plugin.sendToAll(packet);
