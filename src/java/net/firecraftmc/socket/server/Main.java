@@ -82,7 +82,7 @@ public class Main extends JavaPlugin implements Listener {
 
                 for (int i = 0; i < amount; i++) {
                     FirecraftPlayer firecraftPlayer = (FirecraftPlayer) os.readObject();
-                    this.firecraftPlayers.put(firecraftPlayer.getUuid(), firecraftPlayer);
+                    this.firecraftPlayers.put(firecraftPlayer.getUniqueId(), firecraftPlayer);
                 }
 
                 os.close();
@@ -157,7 +157,7 @@ public class Main extends JavaPlugin implements Listener {
                 playerDataTempConfig = YamlConfiguration.loadConfiguration(playerDataTempFile);
 
                 for (FirecraftPlayer fp : firecraftPlayers.values()) {
-                    String mainPath = "players." + fp.getUuid().toString();
+                    String mainPath = "players." + fp.getUniqueId().toString();
                     playerDataTempConfig.set(mainPath + ".rank", fp.getMainRank().toString());
                     playerDataTempConfig.set(mainPath + ".channel", fp.getChannel().toString());
                 }
@@ -249,10 +249,10 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     public void addPlayer(FirecraftPlayer player) {
-        if (!this.firecraftPlayers.containsKey(player.getUuid())) {
-            this.firecraftPlayers.put(player.getUuid(), player);
+        if (!this.firecraftPlayers.containsKey(player.getUniqueId())) {
+            this.firecraftPlayers.put(player.getUniqueId(), player);
         } else {
-            this.firecraftPlayers.replace(player.getUuid(), player);
+            this.firecraftPlayers.replace(player.getUniqueId(), player);
         }
     }
     
@@ -333,8 +333,8 @@ public class Main extends JavaPlugin implements Listener {
                     return true;
                 }
 
-                firecraftPlayers.get(target.getUuid()).setMainRank(targetRank);
-                player.sendMessage("&aSuccessfully set §e" + firecraftPlayers.get(target.getUuid()).getDisplayName() + "&a's rank to " + targetRank.getDisplayName());
+                firecraftPlayers.get(target.getUniqueId()).setMainRank(targetRank);
+                player.sendMessage("&aSuccessfully set §e" + firecraftPlayers.get(target.getUniqueId()).getDisplayName() + "&a's rank to " + targetRank.getDisplayName());
                 saveData();
                 sendToAll(new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.DARK_RED), player, target, targetRank));
             }
@@ -364,7 +364,7 @@ public class Main extends JavaPlugin implements Listener {
                         playerDataTempConfig = YamlConfiguration.loadConfiguration(playerDataTempFile);
 
                         for (FirecraftPlayer fp : firecraftPlayers.values()) {
-                            String mainPath = "players." + fp.getUuid().toString();
+                            String mainPath = "players." + fp.getUniqueId().toString();
                             playerDataTempConfig.set(mainPath + ".rank", fp.getMainRank().toString());
                             playerDataTempConfig.set(mainPath + ".channel", fp.getChannel().toString());
                         }

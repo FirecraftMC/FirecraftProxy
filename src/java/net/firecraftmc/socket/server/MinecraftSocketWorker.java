@@ -80,8 +80,8 @@ public class MinecraftSocketWorker extends Thread {
                         }
                     }
                 } else {
-                    if (!player.getMainRank().equals(plugin.getRank(player.getUuid()))) {
-                        staffJoin.getPlayer().setMainRank(plugin.getRank(player.getUuid()));
+                    if (!player.getMainRank().equals(plugin.getRank(player.getUniqueId()))) {
+                        staffJoin.getPlayer().setMainRank(plugin.getRank(player.getUniqueId()));
                     }
                     String format = ChatUtils.formatStaffJoin(staffJoin.getServer(), staffJoin.getPlayer());
                     for (FirecraftPlayer p : plugin.getPlayers()) {
@@ -102,8 +102,8 @@ public class MinecraftSocketWorker extends Thread {
                         }
                     }
                 } else {
-                    if (!player.getMainRank().equals(plugin.getRank(player.getUuid()))) {
-                        staffQuit.getPlayer().setMainRank(plugin.getRank(player.getUuid()));
+                    if (!player.getMainRank().equals(plugin.getRank(player.getUniqueId()))) {
+                        staffQuit.getPlayer().setMainRank(plugin.getRank(player.getUniqueId()));
                     }
                     String format = ChatUtils.formatStaffLeave(staffQuit.getServer(), staffQuit.getPlayer());
                     for (Player p : Bukkit.getOnlinePlayers()) {
@@ -112,8 +112,8 @@ public class MinecraftSocketWorker extends Thread {
                 }
             } else if (packet instanceof FPStaffChatMessage) {
                 FPStaffChatMessage staffMessage = (FPStaffChatMessage) packet;
-                if (!staffMessage.getPlayer().getMainRank().equals(plugin.getRank(staffMessage.getPlayer().getUuid()))) {
-                    staffMessage.getPlayer().setMainRank(plugin.getRank(staffMessage.getPlayer().getUuid()));
+                if (!staffMessage.getPlayer().getMainRank().equals(plugin.getRank(staffMessage.getPlayer().getUniqueId()))) {
+                    staffMessage.getPlayer().setMainRank(plugin.getRank(staffMessage.getPlayer().getUniqueId()));
                 }
                 if (!Bukkit.getOnlinePlayers().isEmpty()) {
                     String format = ChatUtils.formatStaffMessage(staffMessage.getServer(), staffMessage.getPlayer(), staffMessage.getMessage());
@@ -145,9 +145,9 @@ public class MinecraftSocketWorker extends Thread {
                 }
             } else if (packet instanceof FPacketServerPlayerLeave) {
                 FPacketServerPlayerLeave sPL = ((FPacketServerPlayerLeave) packet);
-                FirecraftPlayer localPlayer = plugin.getPlayer(sPL.getPlayer().getUuid());
+                FirecraftPlayer localPlayer = plugin.getPlayer(sPL.getPlayer().getUniqueId());
                 if (localPlayer == null) {
-                    localPlayer = new FirecraftPlayer(plugin, sPL.getPlayer().getUuid(), Rank.DEFAULT);
+                    localPlayer = new FirecraftPlayer(plugin, sPL.getPlayer().getUniqueId(), Rank.DEFAULT);
                     plugin.addPlayer(localPlayer);
                 } else {
                     plugin.addPlayer(sPL.getPlayer());
@@ -157,8 +157,8 @@ public class MinecraftSocketWorker extends Thread {
                 continue;
             } else if (packet instanceof FPStaffChatVanishToggle) {
                 FPStaffChatVanishToggle toggleVanish = ((FPStaffChatVanishToggle) packet);
-                if (!toggleVanish.getPlayer().getMainRank().equals(plugin.getPlayer(toggleVanish.getPlayer().getUuid()).getMainRank())) {
-                    toggleVanish.getPlayer().setMainRank(plugin.getPlayer(toggleVanish.getPlayer().getUuid()).getMainRank());
+                if (!toggleVanish.getPlayer().getMainRank().equals(plugin.getPlayer(toggleVanish.getPlayer().getUniqueId()).getMainRank())) {
+                    toggleVanish.getPlayer().setMainRank(plugin.getPlayer(toggleVanish.getPlayer().getUniqueId()).getMainRank());
                 }
                 String format = ChatUtils.formatVanishToggle(toggleVanish.getServer(), toggleVanish.getPlayer(), toggleVanish.isVanished());
                 if (!plugin.getPlayers().isEmpty()) {
@@ -170,8 +170,8 @@ public class MinecraftSocketWorker extends Thread {
                 }
             } else if (packet instanceof FPStaffChatVanishToggleOthers) {
                 FPStaffChatVanishToggleOthers toggleVanish = ((FPStaffChatVanishToggleOthers) packet);
-                if (!toggleVanish.getPlayer().getMainRank().equals(plugin.getPlayer(toggleVanish.getPlayer().getUuid()).getMainRank())) {
-                    toggleVanish.getPlayer().setMainRank(plugin.getPlayer(toggleVanish.getPlayer().getUuid()).getMainRank());
+                if (!toggleVanish.getPlayer().getMainRank().equals(plugin.getPlayer(toggleVanish.getPlayer().getUniqueId()).getMainRank())) {
+                    toggleVanish.getPlayer().setMainRank(plugin.getPlayer(toggleVanish.getPlayer().getUniqueId()).getMainRank());
                 }
                 String format = ChatUtils.formatVanishToggleOthers(toggleVanish.getServer(), toggleVanish.getPlayer(), toggleVanish.getTarget());
                 if (!plugin.getPlayers().isEmpty()) {
