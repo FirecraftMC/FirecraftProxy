@@ -62,7 +62,7 @@ public class MinecraftSocketWorker extends Thread {
                 FPacketServerPlayerJoin sPJ = (FPacketServerPlayerJoin) packet;
                 FirecraftPlayer player = plugin.getPlayer(sPJ.getUuid());
                 if (player == null) {
-                    player = new FirecraftPlayer(plugin, sPJ.getUuid(), Rank.DEFAULT);
+                    player = new FirecraftPlayer(plugin, sPJ.getUuid(), Rank.PRIVATE);
                     plugin.addPlayer(player);
                 }
                 FPacketPlayerJoin nPacket = new FPacketPlayerJoin(sPJ.getServer(), player);
@@ -126,7 +126,7 @@ public class MinecraftSocketWorker extends Thread {
 
                 FirecraftPlayer profile = plugin.getPlayer(profileRequest.getUniqueId());
                 if (profile == null) {
-                    profile = new FirecraftPlayer(plugin, profileRequest.getUniqueId(), Rank.DEFAULT);
+                    profile = new FirecraftPlayer(plugin, profileRequest.getUniqueId(), Rank.PRIVATE);
                 }
                 FPacketSendProfile sendProfile = new FPacketSendProfile(new FirecraftServer("Socket", ChatColor.DARK_RED), profile);
                 this.connection.sendPacket(sendProfile);
@@ -147,7 +147,7 @@ public class MinecraftSocketWorker extends Thread {
                 FPacketServerPlayerLeave sPL = ((FPacketServerPlayerLeave) packet);
                 FirecraftPlayer localPlayer = plugin.getPlayer(sPL.getPlayer().getUniqueId());
                 if (localPlayer == null) {
-                    localPlayer = new FirecraftPlayer(plugin, sPL.getPlayer().getUniqueId(), Rank.DEFAULT);
+                    localPlayer = new FirecraftPlayer(plugin, sPL.getPlayer().getUniqueId(), Rank.PRIVATE);
                     plugin.addPlayer(localPlayer);
                 } else {
                     plugin.addPlayer(sPL.getPlayer());

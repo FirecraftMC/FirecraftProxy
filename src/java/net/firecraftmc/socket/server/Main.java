@@ -54,7 +54,8 @@ public class Main extends JavaPlugin implements Listener {
         Thread thread = new Thread(() -> {
             getLogger().log(Level.INFO, "Creating a ServerSocket on port " + port);
             try {
-                serverSocket = new ServerSocket(port, 100, InetAddress.getByName("127.0.0.1"));
+                serverSocket = new ServerSocket(port);
+                System.out.println(serverSocket.getInetAddress());
 
                 Socket socket;
                 while ((socket = serverSocket.accept()) != null) {
@@ -224,7 +225,7 @@ public class Main extends JavaPlugin implements Listener {
             if (entry.getValue().getMainRank().equals(Rank.FIRECRAFT_TEAM)) {
                 UUID uuid = entry.getKey();
                 if (!firecraftTeam.contains(uuid)) {
-                    entry.getValue().setMainRank(Rank.DEFAULT);
+                    entry.getValue().setMainRank(Rank.PRIVATE);
                     this.getLogger().log(Level.INFO, Bukkit.getOfflinePlayer(uuid).getName() + " is not a Firecraft Team member and was set to Firecraft Team.");
                 }
             }
