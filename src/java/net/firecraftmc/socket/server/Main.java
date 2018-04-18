@@ -26,9 +26,9 @@ import java.util.logging.Level;
 
 public class Main extends JavaPlugin implements Listener {
 
-    private List<MinecraftSocketWorker> minecraftSocketWorkers = new ArrayList<>();
+    private final List<MinecraftSocketWorker> minecraftSocketWorkers = new ArrayList<>();
     private ServerSocket serverSocket;
-    private ConcurrentHashMap<UUID, FirecraftPlayer> firecraftPlayers = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, FirecraftPlayer> firecraftPlayers = new ConcurrentHashMap<>();
     private boolean yamlStorage;
 
     private File playerDataFile;
@@ -144,6 +144,7 @@ public class Main extends JavaPlugin implements Listener {
         this.saveConfig();
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     private void saveData() {
         if (yamlStorage) {
             if (playerDataTempFile.exists())  playerDataTempFile.delete();
@@ -284,6 +285,7 @@ public class Main extends JavaPlugin implements Listener {
         e.setFormat(player.getDisplayName() + "§8: §f" + e.getMessage());
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (cmd.getName().equalsIgnoreCase("setrank")) {
             if (sender instanceof ConsoleCommandSender) {

@@ -14,8 +14,8 @@ import java.net.Socket;
 
 public class MinecraftSocketWorker extends Thread {
 
-    private Main plugin;
-    private Socket socket;
+    private final Main plugin;
+    private final Socket socket;
     private FirecraftServer server;
 
     private FirecraftConnection connection;
