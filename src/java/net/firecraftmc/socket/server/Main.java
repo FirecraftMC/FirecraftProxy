@@ -55,7 +55,6 @@ public class Main extends JavaPlugin implements Listener {
             getLogger().log(Level.INFO, "Creating a ServerSocket on port " + port);
             try {
                 serverSocket = new ServerSocket(port);
-                System.out.println(serverSocket.getInetAddress());
 
                 Socket socket;
                 while ((socket = serverSocket.accept()) != null) {
@@ -261,8 +260,8 @@ public class Main extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerPreJoin(AsyncPlayerPreLoginEvent e) {
         if (!firecraftPlayers.containsKey(e.getUniqueId())) {
-            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "Only Fireraft Team members can join this server.");
-        } else if (!firecraftPlayers.get(e.getUniqueId()).getMainRank().equals(Rank.FIRECRAFT_TEAM)){
+            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "Only Fireraft Team members and the Head Admin can join this server.");
+        } else if (!(firecraftPlayers.get(e.getUniqueId()).getMainRank().equals(Rank.FIRECRAFT_TEAM) || firecraftPlayers.get(e.getUniqueId()).getMainRank().equals(Rank.HEAD_ADMIN))) {
             e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "Only Firecraft Team members can join this server.");
         }
     }
@@ -293,8 +292,8 @@ public class Main extends JavaPlugin implements Listener {
             } else if (sender instanceof Player) {
                 Player p = (Player) sender;
                 final FirecraftPlayer player = getPlayer(p.getUniqueId());
-                if (!player.getMainRank().equals(Rank.FIRECRAFT_TEAM)) {
-                    player.sendMessage("&cOnly members of The Firecraft Team can change ranks.");
+                if (!(player.getMainRank().equals(Rank.FIRECRAFT_TEAM) || player.getMainRank().equals(Rank.HEAD_ADMIN))) {
+                    player.sendMessage("&cYou are not allowed to set ranks.");
                     return true;
                 }
 
