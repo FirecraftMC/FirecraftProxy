@@ -259,10 +259,9 @@ public class Main extends JavaPlugin implements Listener {
     
     @EventHandler
     public void onPlayerPreJoin(AsyncPlayerPreLoginEvent e) {
-        if (!firecraftPlayers.containsKey(e.getUniqueId())) {
-            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "Only Fireraft Team members and the Head Admin can join this server.");
-        } else if (!(firecraftPlayers.get(e.getUniqueId()).getMainRank().equals(Rank.FIRECRAFT_TEAM) || firecraftPlayers.get(e.getUniqueId()).getMainRank().equals(Rank.HEAD_ADMIN))) {
-            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "Only Firecraft Team members can join this server.");
+        FirecraftPlayer player = firecraftPlayers.get(e.getUniqueId());
+        if (player == null || !(player.getMainRank().isEqualToOrHigher(Rank.HEAD_ADMIN))) {
+            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "You are not allowed to join this server.");
         }
     }
 
@@ -270,6 +269,7 @@ public class Main extends JavaPlugin implements Listener {
     public void onPlayerJoin(PlayerJoinEvent e) {
         FirecraftPlayer player = getPlayer(e.getPlayer().getUniqueId());
         e.setJoinMessage(player.getDisplayName() + " §ejoined the game.");
+        player.setPlayer(e.getPlayer());
     }
 
     @EventHandler
