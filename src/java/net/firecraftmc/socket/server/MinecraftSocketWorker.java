@@ -90,11 +90,7 @@ public class MinecraftSocketWorker extends Thread {
                     FPSCVanishToggle toggleVanish = ((FPSCVanishToggle) packet);
                     String format = ChatUtils.formatVanishToggle(toggleVanish.getServer(), toggleVanish.getPlayer(), toggleVanish.isVanished());
                     ChatUtils.sendStaffChatMessage(plugin.getPlayers(), staffMember, format);
-                } else if (packet instanceof FPSCVanishToggleOthers) {
-                    FPSCVanishToggleOthers toggleVanish = ((FPSCVanishToggleOthers) packet);
-                    String format = ChatUtils.formatVanishToggleOthers(server, staffMember, toggleVanish.getTarget());
-                    ChatUtils.sendStaffChatMessage(plugin.getPlayers(), staffMember, format);
-                }else if (packet instanceof FPSCSetGamemode) {
+                } else if (packet instanceof FPSCSetGamemode) {
                     FPSCSetGamemode setGamemode = (FPSCSetGamemode) packet;
                     String format = ChatUtils.formatSetGamemode(server, staffMember, setGamemode.getMode());
                     ChatUtils.sendStaffChatMessage(plugin.getPlayers(), staffMember, format);
