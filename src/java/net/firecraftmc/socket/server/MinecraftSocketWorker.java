@@ -8,21 +8,22 @@ import net.firecraftmc.shared.packets.staffchat.*;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.*;
 
 public class MinecraftSocketWorker extends Thread {
-
+    
     private final Main plugin;
     private final Socket socket;
     private FirecraftServer server;
-
+    
     private FirecraftConnection connection;
-
+    
     MinecraftSocketWorker(Main main, Socket socket) {
         this.plugin = main;
         this.socket = socket;
         this.connection = new FirecraftConnection(socket);
     }
-
+    
     public void run() {
         FirecraftPacket packet;
         while (connection != null && connection.isOpen()) {
@@ -65,6 +66,22 @@ public class MinecraftSocketWorker extends Thread {
                 FPacketPlayerJoin nPacket = new FPacketPlayerJoin(sPJ.getServer(), player);
                 plugin.sendToAll(nPacket);
                 continue;
+            } else if (packet instanceof FPRequestRandomProfile) {
+                FPRequestRandomProfile randomProfile = ((FPRequestRandomProfile) packet);
+                List<FirecraftPlayer> allowedProfiles = new ArrayList<>(plugin.getPlayers().size());
+                plugin.getPlayers().forEach(p -> {
+                    if (!Rank.isStaff(p.getMainRank())) {
+                        allowedProfiles.add(p);
+                    }
+                });
+                
+                Random random = new Random();
+                for (int i = 0; i < random.nextInt(10); i++) {
+                    Collections.shuffle(allowedProfiles);
+                }
+                FirecraftPlayer profile = allowedProfiles.get(random.nextInt(allowedProfiles.size()-1));
+                FPSendRandomProfile sendProfile = new FPSendRandomProfile(server, profile, randomProfile.getRequester());
+                send(sendProfile);
             } else if (packet instanceof FPacketStaffChat) {
                 FPacketStaffChat staffChatPacket = ((FPacketStaffChat) packet);
                 FirecraftPlayer staffMember = staffChatPacket.getPlayer();
@@ -112,13 +129,15 @@ public class MinecraftSocketWorker extends Thread {
                     ChatUtils.sendStaffChatMessage(plugin.getPlayers(), staffMember, format);
                 }
             }
-
+            
             plugin.sendToAll(packet);
         }
     }
-
-    void send(FirecraftPacket packet) { connection.sendPacket(packet); }
-
+    
+    void send(FirecraftPacket packet) {
+        connection.sendPacket(packet);
+    }
+    
     private void disconnect() {
         connection.close();
         try {
@@ -128,8 +147,12 @@ public class MinecraftSocketWorker extends Thread {
         }
         this.connection = null;
     }
-
-    public FirecraftServer getServerName() { return server; }
-
-    boolean isConnected() { return socket.isConnected(); }
+    
+    public FirecraftServer getServerName() {
+        return server;
+    }
+    
+    boolean isConnected() {
+        return socket.isConnected();
+    }
 }
