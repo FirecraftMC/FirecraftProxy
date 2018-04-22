@@ -338,6 +338,7 @@ public class Main extends JavaPlugin implements Listener {
                 firecraftPlayers.get(target.getUniqueId()).setMainRank(targetRank);
                 player.sendMessage("&aSuccessfully set §e" + firecraftPlayers.get(target.getUniqueId()).getDisplayName() + "&a's rank to " + targetRank.getDisplayName());
                 saveData();
+                loadData();
                 sendToAll(new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.DARK_RED), player, target, targetRank));
             }
         } else if (cmd.getName().equalsIgnoreCase("toggleyaml")) {
@@ -458,7 +459,48 @@ public class Main extends JavaPlugin implements Listener {
 
         return true;
     }
-
+    
+    private void loadData() {
+        this.firecraftPlayers.clear();
+        if (!yamlStorage) {
+            getLogger().log(Level.INFO, "Loading data from the bin file.");
+            try (FileInputStream fs = new FileInputStream(playerDataFile)) {
+                ObjectInputStream os = new ObjectInputStream(fs);
+            
+                int amount = os.readInt();
+            
+                for (int i = 0; i < amount; i++) {
+                    FirecraftPlayer firecraftPlayer = (FirecraftPlayer) os.readObject();
+                    this.firecraftPlayers.put(firecraftPlayer.getUniqueId(), firecraftPlayer);
+                }
+            
+                os.close();
+            } catch (FileNotFoundException e) {
+                getLogger().log(Level.SEVERE, "Could not find the player data file!");
+            } catch (IOException e) {
+                getLogger().log(Level.SEVERE, "Could not read from the player data file!");
+            } catch (ClassNotFoundException e) {
+                getLogger().log(Level.SEVERE, "There was an error retrieving some data!");
+            }
+            getLogger().log(Level.INFO, "Successfully loaded all data.");
+        } else {
+            getLogger().log(Level.INFO, "Loading data from the yaml file.");
+            playerDataTempConfig = YamlConfiguration.loadConfiguration(playerDataTempFile);
+            if (playerDataTempConfig.contains("players")) {
+                for (String u : playerDataTempConfig.getConfigurationSection("players").getKeys(false)) {
+                    UUID uuid = UUID.fromString(u);
+                    String mainPath = "players." + u;
+                    Rank rank = Rank.valueOf(playerDataTempConfig.getString(mainPath + ".rank"));
+                    Channel channel = Channel.valueOf(playerDataTempConfig.getString(mainPath + ".channel"));
+                    FirecraftPlayer firecraftPlayer = new FirecraftPlayer(this, uuid, rank);
+                    firecraftPlayer.setChannel(channel);
+                    this.firecraftPlayers.put(uuid, firecraftPlayer);
+                }
+            }
+            getLogger().log(Level.INFO, "Successfully loaded all data.");
+        }
+    }
+    
     public Collection<FirecraftPlayer> getPlayers() {
         return firecraftPlayers.values();
     }

@@ -28,7 +28,6 @@ public class MinecraftSocketWorker extends Thread {
         FirecraftPacket packet;
         while (connection != null && connection.isOpen()) {
             packet = connection.readPacket();
-            System.out.println(packet);
             if (packet instanceof FPacketServerConnect) {
                 FPacketServerConnect serverConnect = (FPacketServerConnect) packet;
                 this.server = packet.getServer();
@@ -79,12 +78,21 @@ public class MinecraftSocketWorker extends Thread {
                 for (int i = 0; i < random.nextInt(10); i++) {
                     Collections.shuffle(allowedProfiles);
                 }
-                FirecraftPlayer profile = allowedProfiles.get(random.nextInt(allowedProfiles.size()-1));
+                FirecraftPlayer profile = allowedProfiles.get(random.nextInt(allowedProfiles.size() - 1));
                 FPSendRandomProfile sendProfile = new FPSendRandomProfile(server, profile, randomProfile.getRequester());
+                send(sendProfile);
+            } else if (packet instanceof FPRequestProfile) {
+                FPRequestProfile request = ((FPRequestProfile) packet);
+                FirecraftPlayer player = plugin.getPlayer(request.getUniqueId());
+                if (player == null) {
+                    player = new FirecraftPlayer(plugin, request.getUniqueId(), Rank.PRIVATE);
+                }
+                FPacketSendProfile sendProfile = new FPacketSendProfile(server, player);
                 send(sendProfile);
             } else if (packet instanceof FPacketStaffChat) {
                 FPacketStaffChat staffChatPacket = ((FPacketStaffChat) packet);
                 FirecraftPlayer staffMember = staffChatPacket.getPlayer();
+                staffMember = plugin.getPlayer(staffMember.getUniqueId());
                 if (packet instanceof FPStaffChatJoin) {
                     String format = ChatUtils.formatStaffJoin(server, staffMember);
                     ChatUtils.sendStaffChatMessage(plugin.getPlayers(), staffMember, format);
