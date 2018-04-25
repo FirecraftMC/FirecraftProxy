@@ -19,8 +19,10 @@ import org.bukkit.event.player.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.io.*;
-import java.net.*;
+import java.io.File;
+import java.io.IOException;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
@@ -28,39 +30,36 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 
 public class Main extends JavaPlugin implements Listener {
-
+    
     private final List<MinecraftSocketWorker> minecraftSocketWorkers = new ArrayList<>();
     private ServerSocket serverSocket;
     private final ConcurrentHashMap<UUID, FirecraftPlayer> firecraftPlayers = new ConcurrentHashMap<>();
-    private boolean yamlStorage;
-
+    
     private File playerDataFile;
-    private File playerDataTempFile;
-    private FileConfiguration playerDataTempConfig;
+    private FileConfiguration playerDataConfig;
     
     private MySQL database;
-
+    
     private final UUID firestar311 = UUID.fromString("3f7891ce-5a73-4d52-a2ba-299839053fdc");
     private final UUID powercore122 = UUID.fromString("b30f4b1f-4252-45e5-ac2a-1f75ff6f5783");
     private final UUID assassinplayzyt = UUID.fromString("c292df56-5baa-4a11-87a3-cba08ce5f7a6");
     private final UUID jacob_3pot = UUID.fromString("b258795c-c056-4aac-b953-993b930f06a0");
     private final List<UUID> firecraftTeam = Arrays.asList(firestar311, powercore122, assassinplayzyt, jacob_3pot);
-
+    
     public void onEnable() {
         this.saveDefaultConfig();
         if (!this.getConfig().contains("yamlStorage")) {
             this.getConfig().set("yamlStorage", false);
             this.saveConfig();
         }
-
-        this.yamlStorage = getConfig().getBoolean("yamlStorage");
+        
         int port = this.getConfig().getInt("port");
         getLogger().log(Level.INFO, "Starting the thread used for the socket.");
         Thread thread = new Thread(() -> {
             getLogger().log(Level.INFO, "Creating a ServerSocket on port " + port);
             try {
                 serverSocket = new ServerSocket(port);
-
+                
                 Socket socket;
                 while ((socket = serverSocket.accept()) != null) {
                     MinecraftSocketWorker worker = new MinecraftSocketWorker(this, socket);
@@ -73,106 +72,11 @@ public class Main extends JavaPlugin implements Listener {
             }
         });
         thread.start();
-        playerDataFile = new File(getDataFolder() + File.separator + "playerdata.bin");
-        playerDataTempFile = new File(getDataFolder() + File.separator + "playerdata.yml");
-
+        
+        playerDataFile = new File(getDataFolder() + File.separator + "playerdata.yml");
+        this.loadData();
+        
         this.getServer().getPluginManager().registerEvents(this, this);
-
-        if (!yamlStorage) {
-            getLogger().log(Level.INFO, "Loading data from the bin file.");
-            try (FileInputStream fs = new FileInputStream(playerDataFile)) {
-                ObjectInputStream os = new ObjectInputStream(fs);
-
-                int amount = os.readInt();
-
-                for (int i = 0; i < amount; i++) {
-                    FirecraftPlayer firecraftPlayer = (FirecraftPlayer) os.readObject();
-                    this.firecraftPlayers.put(firecraftPlayer.getUniqueId(), firecraftPlayer);
-                }
-
-                os.close();
-            } catch (FileNotFoundException e) {
-                getLogger().log(Level.SEVERE, "Could not find the player data file!");
-            } catch (IOException e) {
-                getLogger().log(Level.SEVERE, "Could not read from the player data file!");
-            } catch (ClassNotFoundException e) {
-                getLogger().log(Level.SEVERE, "There was an error retrieving some data!");
-            }
-            getLogger().log(Level.INFO, "Successfully loaded all data.");
-        } else {
-            getLogger().log(Level.INFO, "Loading data from the yaml file.");
-            playerDataTempConfig = YamlConfiguration.loadConfiguration(playerDataTempFile);
-            if (playerDataTempConfig.contains("players")) {
-                for (String u : playerDataTempConfig.getConfigurationSection("players").getKeys(false)) {
-                    UUID uuid = UUID.fromString(u);
-                    String mainPath = "players." + u;
-                    Rank rank = Rank.valueOf(playerDataTempConfig.getString(mainPath + ".rank"));
-                    Channel channel = Channel.valueOf(playerDataTempConfig.getString(mainPath + ".channel"));
-                    FirecraftPlayer firecraftPlayer = new FirecraftPlayer(this, uuid, rank);
-                    firecraftPlayer.setChannel(channel);
-                    this.firecraftPlayers.put(uuid, firecraftPlayer);
-                }
-            }
-            getLogger().log(Level.INFO, "Successfully loaded all data.");
-        }
-        
-        new BukkitRunnable() {
-            public void run() {
-                System.out.println("Starting SQL Based tasks");
-                if (!getConfig().contains("mysql")) {
-                    System.out.println("Config does not contain connection info, aborting sql tasks.");
-                    getConfig().set("mysql.user", "root");
-                    getConfig().set("mysql.database", "players");
-                    getConfig().set("mysql.password", "");
-                    getConfig().set("mysql.port", 3306);
-                    getConfig().set("mysql.hostname", "localhost");
-                } else {
-                    System.out.println("Config contains connection details, attempting connection.");
-                    database = new MySQL(getConfig().getString("mysql.user"), getConfig().getString("mysql.database"),
-                            getConfig().getString("mysql.password"), getConfig().getInt("mysql.port"), getConfig().getString("mysql.hostname"));
-                    database.openConnection();
-                    System.out.println("Successfully connected to MySQL database, getting list of players.");
-                    ResultSet players = database.querySQL("SELECT * FROM `playerdata`");
-                    try {
-                        while (players.next()) {
-                            String u = players.getString("uniqueid");
-                            String finalUUIDString = u.substring(0, 8) + "-";
-                            finalUUIDString += u.substring(8, 12) + "-";
-                            finalUUIDString += u.substring(12, 16) + "-";
-                            finalUUIDString += u.substring(16, 20) + "-";
-                            finalUUIDString += u.substring(20, 32);
-                            UUID uuid = UUID.fromString(finalUUIDString);
-                            String lastName = players.getString("lastname");
-                            Rank rank = Rank.valueOf(players.getString("mainrank"));
-                            Channel channel = Channel.valueOf(players.getString("channel"));
-                            boolean vanished = players.getBoolean("vanished");
-                            boolean inventoryinteract, itempickup, itemuse, blockbreak, blockplace, entityinteract, chatting, silentinventories;
-                            FirecraftPlayer.VanishInfo vanish = null;
-                            if (vanished) {
-                                inventoryinteract = players.getBoolean("inventoryinteract");
-                                itempickup = players.getBoolean("itempickup");
-                                itemuse = players.getBoolean("itemuse");
-                                blockbreak = players.getBoolean("blockbreak");
-                                blockplace = players.getBoolean("blockplace");
-                                entityinteract = players.getBoolean("entityinteract");
-                                chatting = players.getBoolean("chatting");
-                                silentinventories = players.getBoolean("silentinventories");
-                                vanish = new FirecraftPlayer.VanishInfo(inventoryinteract, itempickup, itemuse, blockbreak, blockplace, entityinteract, chatting, silentinventories);
-                            }
-                            boolean online = players.getBoolean("online");
-                
-                            FirecraftPlayer player = new FirecraftPlayer(uuid, lastName, rank, channel, vanish, online);
-                            firecraftPlayers.put(player.getUniqueId(), player);
-                            //TODO Other stuff when implemented (firstjoined, timeplayed, lastseen, god, socialspy, balance, nick)
-                        }
-                        System.out.println("Successfully loaded all data from the database.");
-                    } catch (SQLException e) {
-                        System.out.println("There was an error getting player data from the database.");
-                    }
-        
-                }
-            }
-        }.runTaskAsynchronously(this);
         
         getLogger().log(Level.INFO, "Starting the Firecraft Team runnable.");
         new BukkitRunnable() {
@@ -184,7 +88,7 @@ public class Main extends JavaPlugin implements Listener {
                 checkFirecraftTeam();
             }
         }.runTaskTimerAsynchronously(this, 0, 20 * 60);
-
+        
         getLogger().log(Level.INFO, "Starting the socket worker check runnable");
         new BukkitRunnable() {
             public void run() {
@@ -196,67 +100,37 @@ public class Main extends JavaPlugin implements Listener {
                 });
             }
         }.runTaskTimerAsynchronously(this, 0L, 20);
-
+        
         getLogger().log(Level.INFO, "Successfully loaded the plugin.");
     }
-
+    
     public void onDisable() {
         saveData();
-        this.getConfig().set("yamlStorage", yamlStorage);
-        this.saveConfig();
     }
-
-    @SuppressWarnings("ResultOfMethodCallIgnored")
+    
     private void saveData() {
-        if (yamlStorage) {
-            if (playerDataTempFile.exists())  playerDataTempFile.delete();
-
-            if (!playerDataTempFile.exists()) {
-                try {
-                    playerDataTempFile.createNewFile();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
-                playerDataTempConfig = YamlConfiguration.loadConfiguration(playerDataTempFile);
-
-                for (FirecraftPlayer fp : firecraftPlayers.values()) {
-                    String mainPath = "players." + fp.getUniqueId().toString();
-                    playerDataTempConfig.set(mainPath + ".rank", fp.getMainRank().toString());
-                    playerDataTempConfig.set(mainPath + ".channel", fp.getChannel().toString());
-                }
-                try {
-                    playerDataTempConfig.save(playerDataTempFile);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        } else {
-            playerDataFile.delete();
-            if (!playerDataFile.exists()) {
-                try {
-                    playerDataFile.createNewFile();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            try (FileOutputStream fs = new FileOutputStream(playerDataFile)) {
-                ObjectOutputStream os = new ObjectOutputStream(fs);
-                os.writeInt(this.firecraftPlayers.size()); //Amount of players for when reading them on load.
-
-                for (FirecraftPlayer fp : this.firecraftPlayers.values()) {
-                    os.writeObject(fp);
-                }
-
-                os.close();
-            } catch (FileNotFoundException e) {
-                getLogger().log(Level.SEVERE, "Could not find the player data file!");
+        if (playerDataFile.exists()) playerDataFile.delete();
+        
+        if (!playerDataFile.exists()) {
+            try {
+                playerDataFile.createNewFile();
             } catch (IOException e) {
-                getLogger().log(Level.INFO, "Could not write to the player data file!");
+                e.printStackTrace();
+            }
+            
+            playerDataConfig = YamlConfiguration.loadConfiguration(playerDataFile);
+            
+            for (FirecraftPlayer fp : firecraftPlayers.values()) {
+                String mainPath = "players." + fp.getUniqueId().toString();
+                playerDataConfig.set(mainPath + ".rank", fp.getMainRank().toString());
+                playerDataConfig.set(mainPath + ".channel", fp.getChannel().toString());
+            }
+            try {
+                playerDataConfig.save(playerDataFile);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
-        
         if (!database.checkConnection()) {
             database.openConnection();
         }
@@ -323,36 +197,25 @@ public class Main extends JavaPlugin implements Listener {
                     database.updateSQL(sql);
                 }
             } catch (Exception e) {
-            
+                e.printStackTrace();
             }
         }
     }
-
+    
     public void removeWorker(MinecraftSocketWorker worker) {
         this.minecraftSocketWorkers.remove(worker);
     }
-
+    
     public void sendToAll(FirecraftPacket packet) {
         if (!minecraftSocketWorkers.isEmpty()) {
             minecraftSocketWorkers.forEach(worker -> worker.send(packet));
         }
     }
-
-    public void logMsg(String message) {
-        this.getLogger().log(Level.INFO, ChatColor.stripColor(message));
-        if (!Bukkit.getOnlinePlayers().isEmpty()) {
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                if (player.isOp()) {
-                    player.sendMessage(message);
-                }
-            }
-        }
-    }
-
+    
     public Rank getRank(UUID uuid) {
         return firecraftPlayers.get(uuid).getMainRank();
     }
-
+    
     private void checkFirecraftTeam() {
         for (Map.Entry<UUID, FirecraftPlayer> entry : firecraftPlayers.entrySet()) {
             if (entry.getValue().getMainRank().equals(Rank.FIRECRAFT_TEAM)) {
@@ -364,7 +227,7 @@ public class Main extends JavaPlugin implements Listener {
             }
         }
     }
-
+    
     private void setFirecraftTeamMember(UUID uuid) {
         FirecraftPlayer player = getPlayer(uuid);
         if (player == null) {
@@ -377,11 +240,11 @@ public class Main extends JavaPlugin implements Listener {
             }
         }
     }
-
+    
     public FirecraftPlayer getPlayer(UUID uuid) {
         return firecraftPlayers.get(uuid);
     }
-
+    
     public void addPlayer(FirecraftPlayer player) {
         if (!this.firecraftPlayers.containsKey(player.getUniqueId())) {
             this.firecraftPlayers.put(player.getUniqueId(), player);
@@ -397,27 +260,26 @@ public class Main extends JavaPlugin implements Listener {
             e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "You are not allowed to join this server.");
         }
     }
-
+    
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent e) {
         FirecraftPlayer player = getPlayer(e.getPlayer().getUniqueId());
         e.setJoinMessage(player.getDisplayName() + " §ejoined the game.");
         player.setPlayer(e.getPlayer());
     }
-
+    
     @EventHandler
     public void onPlayerLeave(PlayerQuitEvent e) {
         FirecraftPlayer player = getPlayer(e.getPlayer().getUniqueId());
         e.setQuitMessage(player.getDisplayName() + " §eleft the game.");
     }
-
+    
     @EventHandler
     public void onPlayerChat(AsyncPlayerChatEvent e) {
         FirecraftPlayer player = getPlayer(e.getPlayer().getUniqueId());
         e.setFormat(player.getDisplayName() + "§8: §f" + e.getMessage());
     }
-
-    @SuppressWarnings("ResultOfMethodCallIgnored")
+    
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
         if (cmd.getName().equalsIgnoreCase("setrank")) {
             if (sender instanceof ConsoleCommandSender) {
@@ -429,13 +291,13 @@ public class Main extends JavaPlugin implements Listener {
                     player.sendMessage("&cYou are not allowed to set ranks.");
                     return true;
                 }
-
+                
                 if (!(args.length == 2)) {
                     player.sendMessage("&cYou do not have enough arguments.");
                     return true;
                 }
                 String targetName = args[0];
-
+                
                 FirecraftPlayer target = null;
                 for (FirecraftPlayer fp : firecraftPlayers.values()) {
                     if (fp.getName().equalsIgnoreCase(targetName)) {
@@ -443,12 +305,12 @@ public class Main extends JavaPlugin implements Listener {
                         break;
                     }
                 }
-
+                
                 if (target == null) {
                     player.sendMessage("&cThere was no player found for the name: " + targetName);
                     return true;
                 }
-
+                
                 String baseTR = args[1].toUpperCase();
                 Rank targetRank;
                 try {
@@ -457,65 +319,22 @@ public class Main extends JavaPlugin implements Listener {
                     player.sendMessage("&cThe rank name provided was incorrect.");
                     return true;
                 }
-
+                
                 if (targetRank.equals(Rank.FIRECRAFT_TEAM)) {
                     player.sendMessage("&cThe Firecraft Team rank cannot be assigned through a command.");
                     return true;
                 }
-
-                if (targetRank.equals(Rank.CONSOLE)) {
-                    player.sendMessage("&cThe Console rank cannot be set.");
+    
+                if (target.getMainRank().isEqualToOrHigher(player.getMainRank())) {
+                    player.sendMessage("&cYou cannot assign the rank of someone of your current rank or higher.");
                     return true;
                 }
-
+                
                 firecraftPlayers.get(target.getUniqueId()).setMainRank(targetRank);
                 player.sendMessage("&aSuccessfully set §e" + firecraftPlayers.get(target.getUniqueId()).getDisplayName() + "&a's rank to " + targetRank.getDisplayName());
                 saveData();
                 loadData();
                 sendToAll(new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.DARK_RED), player, target, targetRank));
-            }
-        } else if (cmd.getName().equalsIgnoreCase("toggleyaml")) {
-            if (sender instanceof Player) {
-                FirecraftPlayer player = getPlayer(((Player) sender).getUniqueId());
-                if (!player.getMainRank().equals(Rank.FIRECRAFT_TEAM)) {
-                    player.sendMessage("&cOnly Firecraft Team members can toggle the storage option.");
-                    return true;
-                }
-
-                this.yamlStorage = !this.yamlStorage;
-                player.sendMessage("&aChanged player yaml storage to &b" + yamlStorage);
-                player.sendMessage("&aNow saving all data.");
-                if (yamlStorage) {
-                    if (!playerDataTempFile.exists()) {
-                        player.sendMessage("&aYaml File does not exist, creating it.");
-                        try {
-                            playerDataTempFile.createNewFile();
-                        } catch (IOException e) {
-                            player.sendMessage("&cThere was an error creating the file, see console for details.");
-                            e.printStackTrace();
-                        }
-
-                        player.sendMessage("&aCreation complete, saving " + firecraftPlayers.values().size() + " players");
-
-                        playerDataTempConfig = YamlConfiguration.loadConfiguration(playerDataTempFile);
-
-                        for (FirecraftPlayer fp : firecraftPlayers.values()) {
-                            String mainPath = "players." + fp.getUniqueId().toString();
-                            playerDataTempConfig.set(mainPath + ".rank", fp.getMainRank().toString());
-                            playerDataTempConfig.set(mainPath + ".channel", fp.getChannel().toString());
-                        }
-                        try {
-                            playerDataTempConfig.save(playerDataTempFile);
-                        } catch (IOException e) {
-                            player.sendMessage("&cThere was an error saving the data, see console for details.");
-                            e.printStackTrace();
-                        }
-                    }
-                }
-                player.sendMessage("&aSave Complete.");
-            } else {
-                sender.sendMessage("§cOnly Players may change the storage.");
-                return true;
             }
         } else if (cmd.getName().equalsIgnoreCase("createprofile")) {
             if (sender instanceof Player) {
@@ -524,12 +343,12 @@ public class Main extends JavaPlugin implements Listener {
                     player.sendMessage("&cOnly Firecraft Team members can create player data.");
                     return true;
                 }
-
+                
                 if (args.length != 2) {
                     player.sendMessage("&cInvalid amount of arguments.");
                     return true;
                 }
-
+                
                 UUID uuid;
                 try {
                     uuid = UUID.fromString(args[0]);
@@ -537,7 +356,7 @@ public class Main extends JavaPlugin implements Listener {
                     player.sendMessage("&cThat is not a valid UUID.");
                     return true;
                 }
-
+                
                 Rank rank;
                 try {
                     rank = Rank.valueOf(args[1].toUpperCase());
@@ -545,7 +364,7 @@ public class Main extends JavaPlugin implements Listener {
                     player.sendMessage("&cThat is not a valid rank.");
                     return true;
                 }
-
+                
                 FirecraftPlayer created = new FirecraftPlayer(this, uuid, rank);
                 player.sendMessage("&aSuccessfully created a profile for " + created.getDisplayName());
                 this.firecraftPlayers.put(uuid, created);
@@ -574,12 +393,12 @@ public class Main extends JavaPlugin implements Listener {
                             }
                         }
                     }
-
+                    
                     if (target == null) {
                         player.sendMessage("&cCould not find a player with that name/uuid.");
                         return true;
                     }
-
+                    
                     player.sendMessage("&6Displaying profile info for " + target.getName());
                     player.sendMessage("&7Rank: " + target.getMainRank().getBaseColor() + target.getMainRank().toString());
                     player.sendMessage("&7Channel: " + target.getChannel().getColor() + target.getChannel().toString());
@@ -588,54 +407,46 @@ public class Main extends JavaPlugin implements Listener {
                     return true;
                 }
             }
+        } else if (cmd.getName().equalsIgnoreCase("reloaddata")) {
+            if (sender instanceof Player) {
+                FirecraftPlayer player = firecraftPlayers.get(((Player) sender).getUniqueId());
+                if (!player.getMainRank().equals(Rank.FIRECRAFT_TEAM)) {
+                    player.sendMessage("Only Firecraft Team members can reload player data.");
+                    return true;
+                }
+                
+                player.sendMessage("&aStarting a reload of player data.");
+                this.saveData();
+                this.loadData();
+                player.sendMessage("&aReload of player data is now complete.");
+            } else {
+                System.out.println("§cOnly players may reload the player data.");
+                return true;
+            }
         }
-
+        
         return true;
     }
     
     private void loadData() {
         this.firecraftPlayers.clear();
-        if (!yamlStorage) {
-            getLogger().log(Level.INFO, "Loading data from the bin file.");
-            try (FileInputStream fs = new FileInputStream(playerDataFile)) {
-                ObjectInputStream os = new ObjectInputStream(fs);
-            
-                int amount = os.readInt();
-            
-                for (int i = 0; i < amount; i++) {
-                    FirecraftPlayer firecraftPlayer = (FirecraftPlayer) os.readObject();
-                    this.firecraftPlayers.put(firecraftPlayer.getUniqueId(), firecraftPlayer);
-                }
-            
-                os.close();
-            } catch (FileNotFoundException e) {
-                getLogger().log(Level.SEVERE, "Could not find the player data file!");
-            } catch (IOException e) {
-                getLogger().log(Level.SEVERE, "Could not read from the player data file!");
-            } catch (ClassNotFoundException e) {
-                getLogger().log(Level.SEVERE, "There was an error retrieving some data!");
+        getLogger().log(Level.INFO, "Loading all player data.");
+        playerDataConfig = YamlConfiguration.loadConfiguration(playerDataFile);
+        if (playerDataConfig.contains("players")) {
+            for (String u : playerDataConfig.getConfigurationSection("players").getKeys(false)) {
+                UUID uuid = UUID.fromString(u);
+                String mainPath = "players." + u;
+                Rank rank = Rank.valueOf(playerDataConfig.getString(mainPath + ".rank"));
+                Channel channel = Channel.valueOf(playerDataConfig.getString(mainPath + ".channel"));
+                FirecraftPlayer firecraftPlayer = new FirecraftPlayer(this, uuid, rank);
+                firecraftPlayer.setChannel(channel);
+                this.firecraftPlayers.put(uuid, firecraftPlayer);
             }
-            getLogger().log(Level.INFO, "Successfully loaded all data.");
-        } else {
-            getLogger().log(Level.INFO, "Loading data from the yaml file.");
-            playerDataTempConfig = YamlConfiguration.loadConfiguration(playerDataTempFile);
-            if (playerDataTempConfig.contains("players")) {
-                for (String u : playerDataTempConfig.getConfigurationSection("players").getKeys(false)) {
-                    UUID uuid = UUID.fromString(u);
-                    String mainPath = "players." + u;
-                    Rank rank = Rank.valueOf(playerDataTempConfig.getString(mainPath + ".rank"));
-                    Channel channel = Channel.valueOf(playerDataTempConfig.getString(mainPath + ".channel"));
-                    FirecraftPlayer firecraftPlayer = new FirecraftPlayer(this, uuid, rank);
-                    firecraftPlayer.setChannel(channel);
-                    this.firecraftPlayers.put(uuid, firecraftPlayer);
-                }
-            }
-            getLogger().log(Level.INFO, "Successfully loaded all data.");
         }
-    
+        getLogger().log(Level.INFO, "Successfully loaded all data.");
+        
         new BukkitRunnable() {
             public void run() {
-                System.out.println("Starting SQL Based tasks");
                 if (!getConfig().contains("mysql")) {
                     System.out.println("Config does not contain connection info, aborting sql tasks.");
                     getConfig().set("mysql.user", "root");
@@ -644,11 +455,9 @@ public class Main extends JavaPlugin implements Listener {
                     getConfig().set("mysql.port", 3306);
                     getConfig().set("mysql.hostname", "localhost");
                 } else {
-                    System.out.println("Config contains connection details, attempting connection.");
                     database = new MySQL(getConfig().getString("mysql.user"), getConfig().getString("mysql.database"),
                             getConfig().getString("mysql.password"), getConfig().getInt("mysql.port"), getConfig().getString("mysql.hostname"));
                     database.openConnection();
-                    System.out.println("Successfully connected to MySQL database, getting list of players.");
                     ResultSet players = database.querySQL("SELECT * FROM `playerdata`");
                     try {
                         while (players.next()) {
@@ -677,16 +486,14 @@ public class Main extends JavaPlugin implements Listener {
                                 vanish = new FirecraftPlayer.VanishInfo(inventoryinteract, itempickup, itemuse, blockbreak, blockplace, entityinteract, chatting, silentinventories);
                             }
                             boolean online = players.getBoolean("online");
-                        
+                            
                             FirecraftPlayer player = new FirecraftPlayer(uuid, lastName, rank, channel, vanish, online);
                             firecraftPlayers.put(player.getUniqueId(), player);
                             //TODO Other stuff when implemented (firstjoined, timeplayed, lastseen, god, socialspy, balance, nick)
                         }
-                        System.out.println("Successfully loaded all data from the database.");
                     } catch (SQLException e) {
                         System.out.println("There was an error getting player data from the database.");
                     }
-                
                 }
             }
         }.runTaskAsynchronously(this);

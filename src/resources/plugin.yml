@@ -1,12 +1,11 @@
 name: FirecraftServerSocket
 main: net.firecraftmc.socket.server.Main
-version: 1.0-ALPHA
+version: 1.0.1-ALPHA
 load: STARTUP
 author: Firestar311
 commands:
     setrank:
         description: Sets the rank of a player
-    toggleyaml:
     createprofile:
     viewprofile:
-    savedata:
+    reloaddata:
