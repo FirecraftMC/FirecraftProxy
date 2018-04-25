@@ -1,3 +1,9 @@
 logprefix: '&3[Socket Log] '
 yamlStorage: false
 port: 1235
+mysql:
+   user:
+   database:
+   password:
+   port:
+   hostname:
