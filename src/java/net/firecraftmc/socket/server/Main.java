@@ -115,50 +115,64 @@ public class Main extends JavaPlugin implements Listener {
             }
             getLogger().log(Level.INFO, "Successfully loaded all data.");
         }
-        /*
-        if (!getConfig().contains("mysql")) {
-            getConfig().set("mysql.user", "root");
-            getConfig().set("mysql.database", "players");
-            getConfig().set("mysql.password", "");
-            getConfig().set("mysql.port", 3306);
-            getConfig().set("mysql.hostname", "localhost");
-        } else {
-            this.database = new MySQL(getConfig().getString("mysql.user"), getConfig().getString("mysql.database"),
-                    getConfig().getString("mysql.password"), getConfig().getInt("mysql.port"), getConfig().getString("mysql.hostname"));
-            this.database.openConnection();
-            ResultSet players = this.database.querySQL("SELECT * FROM 'playerdata'");
-            try {
-                while (players.next()) {
-                    UUID uuid = UUID.fromString(players.getString("uniqueid"));
-                    String lastName = players.getString("lastname");
-                    Rank rank = Rank.valueOf(players.getString("mainrank"));
-                    Channel channel = Channel.valueOf(players.getString("channel"));
-                    boolean vanished = players.getBoolean("vanished");
-                    boolean inventoryinteract, itempickup, itemuse, blockbreak, blockplace, entityinteract, chatting, silentinventories;
-                    FirecraftPlayer.VanishInfo vanish = null;
-                    if (vanished) {
-                        inventoryinteract = players.getBoolean("inventoryinteract");
-                        itempickup = players.getBoolean("itempickup");
-                        itemuse = players.getBoolean("itemuse");
-                        blockbreak = players.getBoolean("blockbreak");
-                        blockplace = players.getBoolean("blockplace");
-                        entityinteract = players.getBoolean("entityinteract");
-                        chatting = players.getBoolean("chatting");
-                        silentinventories = players.getBoolean("silentinventories");
-                        vanish = new FirecraftPlayer.VanishInfo(inventoryinteract, itempickup, itemuse, blockbreak, blockplace, entityinteract, chatting, silentinventories);
+        
+        new BukkitRunnable() {
+            public void run() {
+                System.out.println("Starting SQL Based tasks");
+                if (!getConfig().contains("mysql")) {
+                    System.out.println("Config does not contain connection info, aborting sql tasks.");
+                    getConfig().set("mysql.user", "root");
+                    getConfig().set("mysql.database", "players");
+                    getConfig().set("mysql.password", "");
+                    getConfig().set("mysql.port", 3306);
+                    getConfig().set("mysql.hostname", "localhost");
+                } else {
+                    System.out.println("Config contains connection details, attempting connection.");
+                    database = new MySQL(getConfig().getString("mysql.user"), getConfig().getString("mysql.database"),
+                            getConfig().getString("mysql.password"), getConfig().getInt("mysql.port"), getConfig().getString("mysql.hostname"));
+                    database.openConnection();
+                    System.out.println("Successfully connected to MySQL database, getting list of players.");
+                    ResultSet players = database.querySQL("SELECT * FROM `playerdata`");
+                    try {
+                        while (players.next()) {
+                            String u = players.getString("uniqueid");
+                            String finalUUIDString = u.substring(0, 8) + "-";
+                            finalUUIDString += u.substring(8, 12) + "-";
+                            finalUUIDString += u.substring(12, 16) + "-";
+                            finalUUIDString += u.substring(16, 20) + "-";
+                            finalUUIDString += u.substring(20, 32);
+                            UUID uuid = UUID.fromString(finalUUIDString);
+                            String lastName = players.getString("lastname");
+                            Rank rank = Rank.valueOf(players.getString("mainrank"));
+                            Channel channel = Channel.valueOf(players.getString("channel"));
+                            boolean vanished = players.getBoolean("vanished");
+                            boolean inventoryinteract, itempickup, itemuse, blockbreak, blockplace, entityinteract, chatting, silentinventories;
+                            FirecraftPlayer.VanishInfo vanish = null;
+                            if (vanished) {
+                                inventoryinteract = players.getBoolean("inventoryinteract");
+                                itempickup = players.getBoolean("itempickup");
+                                itemuse = players.getBoolean("itemuse");
+                                blockbreak = players.getBoolean("blockbreak");
+                                blockplace = players.getBoolean("blockplace");
+                                entityinteract = players.getBoolean("entityinteract");
+                                chatting = players.getBoolean("chatting");
+                                silentinventories = players.getBoolean("silentinventories");
+                                vanish = new FirecraftPlayer.VanishInfo(inventoryinteract, itempickup, itemuse, blockbreak, blockplace, entityinteract, chatting, silentinventories);
+                            }
+                            boolean online = players.getBoolean("online");
+                
+                            FirecraftPlayer player = new FirecraftPlayer(uuid, lastName, rank, channel, vanish, online);
+                            firecraftPlayers.put(player.getUniqueId(), player);
+                            //TODO Other stuff when implemented (firstjoined, timeplayed, lastseen, god, socialspy, balance, nick)
+                        }
+                        System.out.println("Successfully loaded all data from the database.");
+                    } catch (SQLException e) {
+                        System.out.println("There was an error getting player data from the database.");
                     }
-                    boolean online = players.getBoolean("online");
-                    
-                    FirecraftPlayer player = new FirecraftPlayer(uuid, lastName, rank, channel, vanish, online);
-                    this.firecraftPlayers.put(player.getUniqueId(), player);
-                    //TODO Other stuff when implemented (firstjoined, timeplayed, lastseen, god, socialspy, balance, nick)
+        
                 }
-            } catch (SQLException e) {
-                System.out.println("There was an error getting player data from the database.");
             }
-            
-        }
-        */
+        }.runTaskAsynchronously(this);
         
         getLogger().log(Level.INFO, "Starting the Firecraft Team runnable.");
         new BukkitRunnable() {
@@ -247,14 +261,14 @@ public class Main extends JavaPlugin implements Listener {
             database.openConnection();
         }
         
-        /*
+        
         for (FirecraftPlayer player : firecraftPlayers.values()) {
-            ResultSet set = database.querySQL("SELECT 'uniqueid' FROM 'playerdata' WHERE 'uniqueid'=" + player.getUniqueId());
+            ResultSet set = database.querySQL("SELECT `uniqueid` FROM playerdata WHERE uniqueid = \"" + player.getUniqueId().toString().replace("-", "") + "\"");
             try {
                 if (set != null && set.next()) {
-                    String sql = "UPDATE `playerdata` SET `uniqueid`={uuid},`lastname`={name},`mainrank`={rank},`channel`={channel},`vanished`={vanished},`inventoryinteract`={inventoryinteract},`itempickup`={itempickup},`itemuse`={itemuse},`blockbreak`={blockbreak},`blockplace`={blockplace},`entityinteract`={entityinteract},`chatting`={chatting},`silentinventories`=silentinventories,`online`={online} WHERE 'uniqueid' = {uuid}";
-                    sql = sql.replace("{uuid}", player.getUniqueId().toString());
-                    sql = sql.replace("{name}", player.getUniqueId().toString());
+                    String sql = "UPDATE `playerdata` SET `uniqueid`=\"{uuid}\",`lastname`=\"{name}\",`mainrank`=\"{rank}\",`channel`=\"{channel}\",`vanished`=\"{vanished}\",`inventoryinteract`=\"{inventoryinteract}\",`itempickup`=\"{itempickup}\",`itemuse`=\"{itemuse}\",`blockbreak`=\"{blockbreak}\",`blockplace`=\"{blockplace}\",`entityinteract`=\"{entityinteract}\",`chatting`=\"{chatting}\",`silentinventories`=\"{silentinventories}\",`online`=\"{online}\" WHERE `uniqueid` = \"{uuid}\"";
+                    sql = sql.replace("{uuid}", player.getUniqueId().toString().replace("-", ""));
+                    sql = sql.replace("{name}", player.getName());
                     sql = sql.replace("{rank}", player.getMainRank().toString());
                     sql = sql.replace("{channel}", player.getChannel().toString());
                     sql = sql.replace("{vanished}", player.isVanished() + "");
@@ -280,9 +294,9 @@ public class Main extends JavaPlugin implements Listener {
                     sql = sql.replace("{online}", player.isOnline() + "");
                     database.updateSQL(sql);
                 } else {
-                    String sql = "INSERT INTO `playerdata`(`uniqueid`, `lastname`, `mainrank`, `channel`, `vanished`, `inventoryinteract`, `itempickup`, `itemuse`, `blockbreak`, `blockplace`, `entityinteract`, `chatting`, `silentinventories`, `online`) VALUES ({uniqueid},{lastname},{mainrank},{channel},{vanished},{inventoryinteract},{itempickup},{itemuse},{blockbreak},{blockplace},{entityinteract},{chatting},{silentinventories},{online})";
-                    sql = sql.replace("{uuid}", player.getUniqueId().toString());
-                    sql = sql.replace("{name}", player.getUniqueId().toString());
+                    String sql = "INSERT INTO `playerdata`(`uniqueid`, `lastname`, `mainrank`, `channel`, `vanished`, `inventoryinteract`, `itempickup`, `itemuse`, `blockbreak`, `blockplace`, `entityinteract`, `chatting`, `silentinventories`, `online`) VALUES (\"{uuid}\",\"{name}\",\"{rank}\",\"{channel}\",\"{vanished}\",\"{inventoryinteract}\",\"{itempickup}\",\"{itemuse}\",\"{blockbreak}\",\"{blockplace}\",\"{entityinteract}\",\"{chatting}\",\"{silentinventories}\",\"{online}\")";
+                    sql = sql.replace("{uuid}", player.getUniqueId().toString().replace("-", ""));
+                    sql = sql.replace("{name}", player.getName());
                     sql = sql.replace("{rank}", player.getMainRank().toString());
                     sql = sql.replace("{channel}", player.getChannel().toString());
                     sql = sql.replace("{vanished}", player.isVanished() + "");
@@ -312,7 +326,6 @@ public class Main extends JavaPlugin implements Listener {
             
             }
         }
-        */
     }
 
     public void removeWorker(MinecraftSocketWorker worker) {
@@ -619,6 +632,64 @@ public class Main extends JavaPlugin implements Listener {
             }
             getLogger().log(Level.INFO, "Successfully loaded all data.");
         }
+    
+        new BukkitRunnable() {
+            public void run() {
+                System.out.println("Starting SQL Based tasks");
+                if (!getConfig().contains("mysql")) {
+                    System.out.println("Config does not contain connection info, aborting sql tasks.");
+                    getConfig().set("mysql.user", "root");
+                    getConfig().set("mysql.database", "players");
+                    getConfig().set("mysql.password", "");
+                    getConfig().set("mysql.port", 3306);
+                    getConfig().set("mysql.hostname", "localhost");
+                } else {
+                    System.out.println("Config contains connection details, attempting connection.");
+                    database = new MySQL(getConfig().getString("mysql.user"), getConfig().getString("mysql.database"),
+                            getConfig().getString("mysql.password"), getConfig().getInt("mysql.port"), getConfig().getString("mysql.hostname"));
+                    database.openConnection();
+                    System.out.println("Successfully connected to MySQL database, getting list of players.");
+                    ResultSet players = database.querySQL("SELECT * FROM `playerdata`");
+                    try {
+                        while (players.next()) {
+                            String u = players.getString("uniqueid");
+                            String finalUUIDString = u.substring(0, 8) + "-";
+                            finalUUIDString += u.substring(8, 12) + "-";
+                            finalUUIDString += u.substring(12, 16) + "-";
+                            finalUUIDString += u.substring(16, 20) + "-";
+                            finalUUIDString += u.substring(20, 32);
+                            UUID uuid = UUID.fromString(finalUUIDString);
+                            String lastName = players.getString("lastname");
+                            Rank rank = Rank.valueOf(players.getString("mainrank"));
+                            Channel channel = Channel.valueOf(players.getString("channel"));
+                            boolean vanished = players.getBoolean("vanished");
+                            boolean inventoryinteract, itempickup, itemuse, blockbreak, blockplace, entityinteract, chatting, silentinventories;
+                            FirecraftPlayer.VanishInfo vanish = null;
+                            if (vanished) {
+                                inventoryinteract = players.getBoolean("inventoryinteract");
+                                itempickup = players.getBoolean("itempickup");
+                                itemuse = players.getBoolean("itemuse");
+                                blockbreak = players.getBoolean("blockbreak");
+                                blockplace = players.getBoolean("blockplace");
+                                entityinteract = players.getBoolean("entityinteract");
+                                chatting = players.getBoolean("chatting");
+                                silentinventories = players.getBoolean("silentinventories");
+                                vanish = new FirecraftPlayer.VanishInfo(inventoryinteract, itempickup, itemuse, blockbreak, blockplace, entityinteract, chatting, silentinventories);
+                            }
+                            boolean online = players.getBoolean("online");
+                        
+                            FirecraftPlayer player = new FirecraftPlayer(uuid, lastName, rank, channel, vanish, online);
+                            firecraftPlayers.put(player.getUniqueId(), player);
+                            //TODO Other stuff when implemented (firstjoined, timeplayed, lastseen, god, socialspy, balance, nick)
+                        }
+                        System.out.println("Successfully loaded all data from the database.");
+                    } catch (SQLException e) {
+                        System.out.println("There was an error getting player data from the database.");
+                    }
+                
+                }
+            }
+        }.runTaskAsynchronously(this);
     }
     
     public Collection<FirecraftPlayer> getPlayers() {
