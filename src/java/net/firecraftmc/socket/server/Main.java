@@ -135,10 +135,10 @@ public class Main extends JavaPlugin implements Listener {
             database.openConnection();
         }
         
-        
-        for (FirecraftPlayer player : firecraftPlayers.values()) {
-            ResultSet set = database.querySQL("SELECT `uniqueid` FROM playerdata WHERE uniqueid = \"" + player.getUniqueId().toString().replace("-", "") + "\"");
-            try {
+        try {
+            for (FirecraftPlayer player : firecraftPlayers.values()) {
+                ResultSet set = database.querySQL("SELECT `uniqueid` FROM playerdata WHERE uniqueid = \"" + player.getUniqueId().toString().replace("-", "") + "\"");
+                
                 if (set != null && set.next()) {
                     String sql = "UPDATE `playerdata` SET `uniqueid`=\"{uuid}\",`lastname`=\"{name}\",`mainrank`=\"{rank}\",`channel`=\"{channel}\",`vanished`=\"{vanished}\",`inventoryinteract`=\"{inventoryinteract}\",`itempickup`=\"{itempickup}\",`itemuse`=\"{itemuse}\",`blockbreak`=\"{blockbreak}\",`blockplace`=\"{blockplace}\",`entityinteract`=\"{entityinteract}\",`chatting`=\"{chatting}\",`silentinventories`=\"{silentinventories}\",`online`=\"{online}\" WHERE `uniqueid` = \"{uuid}\"";
                     sql = sql.replace("{uuid}", player.getUniqueId().toString().replace("-", ""));
@@ -196,9 +196,9 @@ public class Main extends JavaPlugin implements Listener {
                     sql = sql.replace("{online}", player.isOnline() + "");
                     database.updateSQL(sql);
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
     }
     
@@ -324,7 +324,7 @@ public class Main extends JavaPlugin implements Listener {
                     player.sendMessage("&cThe Firecraft Team rank cannot be assigned through a command.");
                     return true;
                 }
-    
+                
                 if (target.getMainRank().isEqualToOrHigher(player.getMainRank())) {
                     player.sendMessage("&cYou cannot assign the rank of someone of your current rank or higher.");
                     return true;
