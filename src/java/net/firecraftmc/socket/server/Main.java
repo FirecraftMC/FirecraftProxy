@@ -267,12 +267,7 @@ public class Main extends JavaPlugin implements Listener {
             try {
                 while (players.next()) {
                     String u = players.getString("uniqueid");
-                    String finalUUIDString = u.substring(0, 8) + "-";
-                    finalUUIDString += u.substring(8, 12) + "-";
-                    finalUUIDString += u.substring(12, 16) + "-";
-                    finalUUIDString += u.substring(16, 20) + "-";
-                    finalUUIDString += u.substring(20, 32);
-                    UUID uuid = UUID.fromString(finalUUIDString);
+                    UUID uuid = Utils.convertToUUID(u);
                     String lastName = players.getString("lastname");
                     Rank rank;
                     try {
