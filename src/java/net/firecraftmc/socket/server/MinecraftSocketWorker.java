@@ -8,7 +8,7 @@ import net.firecraftmc.shared.packets.staffchat.*;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.util.*;
+import java.util.Collection;
 
 public class MinecraftSocketWorker extends Thread {
     
@@ -57,84 +57,65 @@ public class MinecraftSocketWorker extends Thread {
                 break;
             } else if (packet instanceof FPacketServerPlayerJoin) {
                 FPacketServerPlayerJoin sPJ = (FPacketServerPlayerJoin) packet;
-                FirecraftPlayer player = plugin.getPlayer(sPJ.getUuid());
-                if (player == null) {
-                    player = new FirecraftPlayer(plugin, sPJ.getUuid(), Rank.PRIVATE);
-                    plugin.addPlayer(player);
-                }
-                FPacketPlayerJoin nPacket = new FPacketPlayerJoin(sPJ.getServer(), player);
-                plugin.sendToAll(nPacket);
-                continue;
-            } else if (packet instanceof FPRequestRandomProfile) {
-                FPRequestRandomProfile randomProfile = ((FPRequestRandomProfile) packet);
-                List<FirecraftPlayer> allowedProfiles = new ArrayList<>(plugin.getPlayers().size());
-                plugin.getPlayers().forEach(p -> {
-                    if (!Rank.isStaff(p.getMainRank())) {
-                        allowedProfiles.add(p);
-                    }
-                });
                 
-                Random random = new Random();
-                for (int i = 0; i < random.nextInt(10); i++) {
-                    Collections.shuffle(allowedProfiles);
-                }
-                FirecraftPlayer profile = allowedProfiles.get(random.nextInt(allowedProfiles.size() - 1));
-                FPSendRandomProfile sendProfile = new FPSendRandomProfile(server, profile, randomProfile.getRequester());
-                send(sendProfile);
-            } else if (packet instanceof FPRequestProfile) {
-                FPRequestProfile request = ((FPRequestProfile) packet);
-                FirecraftPlayer player = plugin.getPlayer(request.getUniqueId());
-                if (player == null) {
-                    player = new FirecraftPlayer(plugin, request.getUniqueId(), Rank.PRIVATE);
-                }
-                FPacketSendProfile sendProfile = new FPacketSendProfile(server, player);
-                send(sendProfile);
+                FPacketPlayerJoin nPacket = new FPacketPlayerJoin(sPJ.getServer(), sPJ.getUuid());
+                plugin.sendToAll(nPacket);
             } else if (packet instanceof FPacketStaffChat) {
                 FPacketStaffChat staffChatPacket = ((FPacketStaffChat) packet);
-                FirecraftPlayer staffMember = staffChatPacket.getPlayer();
-                staffMember = plugin.getPlayer(staffMember.getUniqueId());
+                FirecraftPlayer staffMember = Utils.getPlayerFromDatabase(plugin.getDatabase(), plugin, staffChatPacket.getPlayer());
+                Collection<FirecraftPlayer> players = plugin.getPlayers();
                 if (packet instanceof FPStaffChatJoin) {
                     String format = ChatUtils.formatStaffJoin(server, staffMember);
-                    ChatUtils.sendStaffChatMessage(plugin.getPlayers(), staffMember, format);
+                    ChatUtils.sendStaffChatMessage(players, staffMember, format);
                 } else if (packet instanceof FPStaffChatQuit) {
                     String format = ChatUtils.formatStaffLeave(server, staffMember);
-                    ChatUtils.sendStaffChatMessage(plugin.getPlayers(), staffMember, format);
+                    ChatUtils.sendStaffChatMessage(players, staffMember, format);
                 } else if (packet instanceof FPStaffChatMessage) {
                     FPStaffChatMessage staffMessage = (FPStaffChatMessage) packet;
-                    String format = ChatUtils.formatStaffMessage(staffMessage.getServer(), staffMessage.getPlayer(), staffMessage.getMessage());
-                    ChatUtils.sendStaffChatMessage(plugin.getPlayers(), staffMember, format);
+                    String format = ChatUtils.formatStaffMessage(staffMessage.getServer(), staffMember, staffMessage.getMessage());
+                    if (players.isEmpty()) return;
+                    players.forEach(p -> {
+                        if (Rank.isStaff(p.getMainRank())) {
+                            p.sendMessage(format);
+                        }
+                    });
                 } else if (packet instanceof FPStaffChatSetNick) {
                     FPStaffChatSetNick setNick = ((FPStaffChatSetNick) packet);
-                    String format = ChatUtils.formatSetNick(setNick.getServer(), setNick.getPlayer(), setNick.getProfile());
-                    ChatUtils.sendStaffChatMessage(plugin.getPlayers(), staffMember, format);
+                    String format = ChatUtils.formatSetNick(setNick.getServer(), staffMember, setNick.getProfile());
+                    ChatUtils.sendStaffChatMessage(players, staffMember, format);
                 } else if (packet instanceof FPStaffChatResetNick) {
                     FPStaffChatResetNick resetNick = ((FPStaffChatResetNick) packet);
-                    String format = ChatUtils.formatResetNick(resetNick.getServer(), resetNick.getPlayer());
-                    ChatUtils.sendStaffChatMessage(plugin.getPlayers(), staffMember, format);
+                    String format = ChatUtils.formatResetNick(resetNick.getServer(), staffMember);
+                    ChatUtils.sendStaffChatMessage(players, staffMember, format);
                 } else if (packet instanceof FPSCVanishToggle) {
                     FPSCVanishToggle toggleVanish = ((FPSCVanishToggle) packet);
-                    String format = ChatUtils.formatVanishToggle(toggleVanish.getServer(), toggleVanish.getPlayer(), toggleVanish.isVanished());
-                    ChatUtils.sendStaffChatMessage(plugin.getPlayers(), staffMember, format);
+                    String format = ChatUtils.formatVanishToggle(toggleVanish.getServer(), staffMember, staffMember.isVanished());
+                    ChatUtils.sendStaffChatMessage(players, staffMember, format);
                 } else if (packet instanceof FPSCSetGamemode) {
                     FPSCSetGamemode setGamemode = (FPSCSetGamemode) packet;
                     String format = ChatUtils.formatSetGamemode(server, staffMember, setGamemode.getMode());
-                    ChatUtils.sendStaffChatMessage(plugin.getPlayers(), staffMember, format);
+                    ChatUtils.sendStaffChatMessage(players, staffMember, format);
                 } else if (packet instanceof FPSCSetGamemodeOthers) {
                     FPSCSetGamemodeOthers setGamemodeOthers = (FPSCSetGamemodeOthers) packet;
-                    String format = ChatUtils.formatSetGamemodeOthers(server, staffMember, setGamemodeOthers.getMode(), setGamemodeOthers.getTarget());
-                    ChatUtils.sendStaffChatMessage(plugin.getPlayers(), staffMember, format);
+                    FirecraftPlayer target = Utils.getPlayerFromDatabase(plugin.getDatabase(), plugin, setGamemodeOthers.getTarget());
+                    String format = ChatUtils.formatSetGamemodeOthers(server, staffMember, setGamemodeOthers.getMode(), target);
+                    ChatUtils.sendStaffChatMessage(players, staffMember, format);
                 } else if (packet instanceof FPSCTeleport) {
                     FPSCTeleport teleport = (FPSCTeleport) packet;
-                    String format = ChatUtils.formatTeleport(server, staffMember, teleport.getTarget());
-                    ChatUtils.sendStaffChatMessage(plugin.getPlayers(), staffMember, format);
+                    FirecraftPlayer target = Utils.getPlayerFromDatabase(plugin.getDatabase(), plugin, teleport.getTarget());
+                    String format = ChatUtils.formatTeleport(server, staffMember, target);
+                    ChatUtils.sendStaffChatMessage(players, staffMember, format);
                 } else if (packet instanceof FPSCTeleportOthers) {
                     FPSCTeleportOthers teleportOthers = (FPSCTeleportOthers) packet;
-                    String format = ChatUtils.formatTeleportOthers(server, staffMember, teleportOthers.getTarget1(), teleportOthers.getTarget2());
-                    ChatUtils.sendStaffChatMessage(plugin.getPlayers(), staffMember, format);
+                    FirecraftPlayer target1 = Utils.getPlayerFromDatabase(plugin.getDatabase(), plugin, teleportOthers.getTarget1());
+                    FirecraftPlayer target2 = Utils.getPlayerFromDatabase(plugin.getDatabase(), plugin, teleportOthers.getTarget2());
+                    String format = ChatUtils.formatTeleportOthers(server, staffMember, target1, target2);
+                    ChatUtils.sendStaffChatMessage(players, staffMember, format);
                 } else if (packet instanceof FPSCTeleportHere) {
                     FPSCTeleportHere tpHere = (FPSCTeleportHere) packet;
-                    String format = ChatUtils.formatTeleportHere(server, staffMember, tpHere.getTarget());
-                    ChatUtils.sendStaffChatMessage(plugin.getPlayers(), staffMember, format);
+                    FirecraftPlayer target = Utils.getPlayerFromDatabase(plugin.getDatabase(), plugin, tpHere.getTarget());
+                    String format = ChatUtils.formatTeleportHere(server, staffMember, target);
+                    ChatUtils.sendStaffChatMessage(players, staffMember, format);
                 }
             }
             

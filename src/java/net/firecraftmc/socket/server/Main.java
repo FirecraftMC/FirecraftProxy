@@ -190,7 +190,7 @@ public class Main extends JavaPlugin implements Listener {
                 database.querySQL("UPDATE `playerdata` SET `mainrank`='" + target.getMainRank().toString() + "' WHERE `uniqueid`='" + uuid.toString().replace("-", "") + "';");
                 String prefix = (!targetRank.equals(Rank.PRIVATE)) ? targetRank.getPrefix() : targetRank.getBaseColor() + "Private";
                 player.sendMessage("&aSuccessfully set §e" + target.getName() + " &a's rank to " + prefix);
-                sendToAll(new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.DARK_RED), player, target, targetRank));
+                sendToAll(new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.DARK_RED), player.getUniqueId(), target.getUniqueId(), targetRank));
             }
         } else if (cmd.getName().equalsIgnoreCase("createprofile")) {
             if (sender instanceof Player) {
@@ -300,5 +300,9 @@ public class Main extends JavaPlugin implements Listener {
                 System.out.println("There was an error getting player data from the database.");
             }
         }
+    }
+    
+    public Collection<FirecraftPlayer> getPlayers() {
+        return localPlayers.values();
     }
 }
