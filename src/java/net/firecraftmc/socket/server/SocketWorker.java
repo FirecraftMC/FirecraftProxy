@@ -6,19 +6,18 @@ import net.firecraftmc.shared.packets.*;
 import net.firecraftmc.shared.packets.staffchat.*;
 
 import java.io.*;
-import java.net.Socket;
 import java.util.Collection;
 
 public class SocketWorker extends Thread {
     
     private static Main plugin;
-    private final Socket socket;
+    private final java.net.Socket socket;
     private FirecraftServer server;
     
     private ObjectOutputStream outputStream;
     private ObjectInputStream inputStream;
     
-    SocketWorker(Main main, Socket socket) {
+    SocketWorker(Main main, java.net.Socket socket) {
         plugin = main;
         this.socket = socket;
         try {
@@ -74,6 +73,8 @@ public class SocketWorker extends Thread {
                     FPacketServerPlayerJoin sPJ = (FPacketServerPlayerJoin) packet;
                     FPacketPlayerJoin nPacket = new FPacketPlayerJoin(sPJ.getServer(), sPJ.getUuid());
                     sendToAll(nPacket);
+                } else if (packet instanceof FPacketPunish) {
+                    Utils.Socket.handlePunish(packet, plugin.getDatabase(), plugin.getPlayers());
                 } else if (packet instanceof FPacketStaffChat) {
                     FPacketStaffChat staffChatPacket = ((FPacketStaffChat) packet);
                     FirecraftPlayer staffMember = Utils.getPlayerFromDatabase(plugin.getDatabase(), plugin, staffChatPacket.getPlayer());
