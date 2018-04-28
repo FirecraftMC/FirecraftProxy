@@ -111,8 +111,8 @@ public class Main extends JavaPlugin implements Listener {
     public void onPlayerJoin(PlayerJoinEvent e) {
         FirecraftPlayer player = Utils.getPlayerFromDatabase(database, this, e.getPlayer().getUniqueId());
         this.localPlayers.put(player.getUniqueId(), player);
-        player.sendMessage(player.getDisplayName() + " §ejoined the game.");
-    }
+        e.setJoinMessage(player.getDisplayName() + " §ejoined the game.");
+}
     
     @EventHandler
     public void onPlayerLeave(PlayerQuitEvent e) {
