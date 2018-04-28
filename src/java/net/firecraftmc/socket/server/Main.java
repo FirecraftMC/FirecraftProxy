@@ -18,7 +18,6 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.*;
 import java.util.logging.Level;
 
@@ -284,14 +283,16 @@ public class Main extends JavaPlugin implements Listener {
                     if (firecraftTeam.contains(uuid)) {
                         if (!rank.equals(Rank.FIRECRAFT_TEAM)) {
                             database.querySQL("UPDATE `playerdata` SET `mainrank`='" + Rank.FIRECRAFT_TEAM.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
-                            //TODO FPacketRankUpdate rankUpdate = new FPacketRankUpdate();
+                            FPacketRankUpdate rankUpdate = new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.RED), null, uuid, Rank.FIRECRAFT_TEAM);
+                            sendToAll(rankUpdate);
                         }
                     } else if (rank.equals(Rank.FIRECRAFT_TEAM)) {
                         database.querySQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "'; WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
-                        //TODO FPacketRankUpdate rankUpdate = new FPacketRankUpdate();
+                        FPacketRankUpdate rankUpdate = new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.RED), null, uuid, Rank.PRIVATE);
+                        sendToAll(rankUpdate);
                     }
                 }
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 System.out.println("There was an error getting player data from the database.");
             }
         }
