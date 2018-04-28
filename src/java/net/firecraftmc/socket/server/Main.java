@@ -2,7 +2,6 @@ package net.firecraftmc.socket.server;
 
 import net.firecraftmc.shared.MySQL;
 import net.firecraftmc.shared.classes.*;
-import net.firecraftmc.shared.classes.utils.MojangUtils;
 import net.firecraftmc.shared.enums.Rank;
 import net.firecraftmc.shared.packets.FPacketRankUpdate;
 import org.bukkit.ChatColor;
@@ -145,7 +144,7 @@ public class Main extends JavaPlugin implements Listener {
                 
                 UUID uuid;
                 try {
-                    uuid = MojangUtils.getUUIDFromName(targetName);
+                    uuid = Utils.Mojang.getUUIDFromName(targetName);
                 } catch (Exception e) {
                     player.sendMessage("&cThere was an error getting the uuid from the name you provided.");
                     return true;
@@ -271,7 +270,7 @@ public class Main extends JavaPlugin implements Listener {
                         rank = Rank.PRIVATE;
                         database.querySQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
                     }
-                    String mojangName = MojangUtils.getNameFromUUID(uuid.toString());
+                    String mojangName = Utils.Mojang.getNameFromUUID(uuid.toString());
                     if (mojangName != null && !mojangName.equalsIgnoreCase(lastName)) {
                         database.querySQL("UPDATE `playerdata` SET `lastname`='" + mojangName + "';");
                     }
