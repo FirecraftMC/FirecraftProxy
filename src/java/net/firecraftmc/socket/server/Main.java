@@ -5,7 +5,6 @@ import net.firecraftmc.shared.classes.*;
 import net.firecraftmc.shared.classes.utils.MojangUtils;
 import net.firecraftmc.shared.enums.Rank;
 import net.firecraftmc.shared.packets.FPacketRankUpdate;
-import net.firecraftmc.shared.packets.FirecraftPacket;
 import org.bukkit.ChatColor;
 import org.bukkit.command.*;
 import org.bukkit.entity.Player;
@@ -15,6 +14,7 @@ import org.bukkit.event.player.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.ResultSet;
@@ -23,7 +23,7 @@ import java.util.logging.Level;
 
 public class Main extends JavaPlugin implements Listener {
     
-    private final List<MinecraftSocketWorker> minecraftSocketWorkers = new ArrayList<>();
+    final List<SocketWorker> socketWorkers = new ArrayList<>();
     private ServerSocket serverSocket;
     
     private final HashMap<UUID, FirecraftPlayer> localPlayers = new HashMap<>();
@@ -38,10 +38,6 @@ public class Main extends JavaPlugin implements Listener {
     
     public void onEnable() {
         this.saveDefaultConfig();
-        if (!this.getConfig().contains("yamlStorage")) {
-            this.getConfig().set("yamlStorage", false);
-            this.saveConfig();
-        }
         
         int port = this.getConfig().getInt("port");
         getLogger().log(Level.INFO, "Starting the thread used for the socket.");
@@ -52,10 +48,10 @@ public class Main extends JavaPlugin implements Listener {
                 
                 Socket socket;
                 while ((socket = serverSocket.accept()) != null) {
-                    MinecraftSocketWorker worker = new MinecraftSocketWorker(this, socket);
+                    SocketWorker worker = new SocketWorker(this, socket);
                     worker.start();
+                    socketWorkers.add(worker);
                     getLogger().log(Level.INFO, "Received connection from: " + socket);
-                    minecraftSocketWorkers.add(worker);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -74,30 +70,30 @@ public class Main extends JavaPlugin implements Listener {
         getLogger().log(Level.INFO, "Starting the socket worker check runnable");
         new BukkitRunnable() {
             public void run() {
-                minecraftSocketWorkers.forEach(sw -> {
+                socketWorkers.forEach(sw -> {
                     if (!sw.isConnected()) {
                         sw.interrupt();
-                        minecraftSocketWorkers.remove(sw);
+                        System.out.println("Removed a socket worker.");
+                        socketWorkers.remove(sw);
                     }
                 });
             }
-        }.runTaskTimerAsynchronously(this, 0L, 20);
+        }.runTaskTimer(this, 0L, 20);
         
         getLogger().log(Level.INFO, "Successfully loaded the plugin.");
     }
     
     public void onDisable() {
         database.closeConnection();
-    }
-    
-    public void removeWorker(MinecraftSocketWorker worker) {
-        this.minecraftSocketWorkers.remove(worker);
-    }
-    
-    public void sendToAll(FirecraftPacket packet) {
-        if (!minecraftSocketWorkers.isEmpty()) {
-            minecraftSocketWorkers.forEach(worker -> worker.send(packet));
+        try {
+            this.serverSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
+    }
+    
+    public void removeWorker(SocketWorker worker) {
+        this.socketWorkers.remove(worker);
     }
     
     @EventHandler
@@ -112,7 +108,7 @@ public class Main extends JavaPlugin implements Listener {
         FirecraftPlayer player = Utils.getPlayerFromDatabase(database, this, e.getPlayer().getUniqueId());
         this.localPlayers.put(player.getUniqueId(), player);
         e.setJoinMessage(player.getDisplayName() + " §ejoined the game.");
-}
+    }
     
     @EventHandler
     public void onPlayerLeave(PlayerQuitEvent e) {
@@ -189,7 +185,7 @@ public class Main extends JavaPlugin implements Listener {
                 database.querySQL("UPDATE `playerdata` SET `mainrank`='" + target.getMainRank().toString() + "' WHERE `uniqueid`='" + uuid.toString().replace("-", "") + "';");
                 String prefix = (!targetRank.equals(Rank.PRIVATE)) ? targetRank.getPrefix() : targetRank.getBaseColor() + "Private";
                 player.sendMessage("&aSuccessfully set §e" + target.getName() + " &a's rank to " + prefix);
-                sendToAll(new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.DARK_RED), player.getUniqueId(), target.getUniqueId()));
+                SocketWorker.sendToAll(new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.DARK_RED), player.getUniqueId(), target.getUniqueId()));
             }
         } else if (cmd.getName().equalsIgnoreCase("createprofile")) {
             if (sender instanceof Player) {
@@ -284,18 +280,19 @@ public class Main extends JavaPlugin implements Listener {
                         if (!rank.equals(Rank.FIRECRAFT_TEAM)) {
                             database.querySQL("UPDATE `playerdata` SET `mainrank`='" + Rank.FIRECRAFT_TEAM.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
                             FPacketRankUpdate rankUpdate = new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.RED), null, uuid);
-                            sendToAll(rankUpdate);
+                            SocketWorker.sendToAll(rankUpdate);
                         }
                     } else if (rank.equals(Rank.FIRECRAFT_TEAM)) {
                         database.querySQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "'; WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
                         FPacketRankUpdate rankUpdate = new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.RED), null, uuid);
-                        sendToAll(rankUpdate);
+                        SocketWorker.sendToAll(rankUpdate);
                     }
                 }
             } catch (Exception e) {
                 System.out.println("There was an error getting player data from the database.");
             }
         }
+        getLogger().log(Level.INFO, "Finished loading player data.");
     }
     
     public Collection<FirecraftPlayer> getPlayers() {
