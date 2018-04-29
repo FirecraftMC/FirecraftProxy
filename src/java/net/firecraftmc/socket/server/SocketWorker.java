@@ -33,8 +33,7 @@ public class SocketWorker extends Thread {
             FirecraftPacket packet;
             while (socket.isConnected()) {
                 Object obj = this.inputStream.readObject();
-                System.out.println(obj);
-                
+                System.out.println("Received: " + obj);
                 if (obj instanceof FirecraftPacket) {
                     packet = (FirecraftPacket) obj;
                 } else {
@@ -43,29 +42,14 @@ public class SocketWorker extends Thread {
                 }
                 
                 if (packet instanceof FPacketServerConnect) {
-                    System.out.println("Packet is server connect");
                     FPacketServerConnect serverConnect = (FPacketServerConnect) packet;
                     this.server = packet.getServer();
-                    String format = "&8[&9S&8] &8[<server>&8] &9<message>";
-                    format = format.replace("<server>", serverConnect.getServer().toString());
-                    format = format.replace("<message>", serverConnect.getServer().getName() + " has started.");
-                    String finalFormat = format;
-                    plugin.getPlayers().forEach(fp -> {
-                        if (Rank.isStaff(fp.getMainRank())) {
-                            fp.sendMessage(finalFormat);
-                        }
-                    });
+                    String format = Utils.Chat.formatServerConnect(server.getName());
+                    plugin.getPlayers().forEach(fp -> fp.sendMessage(format));
                 } else if (packet instanceof FPacketServerDisconnect) {
                     FPacketServerDisconnect serverDisconnect = (FPacketServerDisconnect) packet;
-                    String format = "&8[&9S&8] &8[<server>&8] &9<message>";
-                    format = format.replace("<server>", serverDisconnect.getServer().toString());
-                    format = format.replace("<message>", serverDisconnect.getServer().getName() + " has stopped.");
-                    String finalFormat = format;
-                    plugin.getPlayers().forEach(fp -> {
-                        if (Rank.isStaff(fp.getMainRank())) {
-                            fp.sendMessage(finalFormat);
-                        }
-                    });
+                    String format = Utils.Chat.formatServerDisconnect(serverDisconnect.getServer().getName());
+                    plugin.getPlayers().forEach(fp -> fp.sendMessage(format));
                     plugin.removeWorker(this);
                     disconnect();
                     break;
@@ -77,7 +61,7 @@ public class SocketWorker extends Thread {
                     Utils.Socket.handlePunish(packet, plugin.getDatabase(), plugin.getPlayers());
                 } else if (packet instanceof FPacketStaffChat) {
                     FPacketStaffChat staffChatPacket = ((FPacketStaffChat) packet);
-                    FirecraftPlayer staffMember = Utils.getPlayerFromDatabase(plugin.getDatabase(), plugin, staffChatPacket.getPlayer());
+                    FirecraftPlayer staffMember = Utils.getPlayerFromDatabase(plugin.server, plugin.getDatabase(), plugin, staffChatPacket.getPlayer());
                     Collection<FirecraftPlayer> players = plugin.getPlayers();
                     if (packet instanceof FPStaffChatJoin) {
                         String format = Utils.Chat.formatStaffJoin(server, staffMember);
@@ -112,23 +96,23 @@ public class SocketWorker extends Thread {
                         Utils.Chat.sendStaffChatMessage(players, staffMember, format);
                     } else if (packet instanceof FPSCSetGamemodeOthers) {
                         FPSCSetGamemodeOthers setGamemodeOthers = (FPSCSetGamemodeOthers) packet;
-                        FirecraftPlayer target = Utils.getPlayerFromDatabase(plugin.getDatabase(), plugin, setGamemodeOthers.getTarget());
+                        FirecraftPlayer target = Utils.getPlayerFromDatabase(plugin.server, plugin.getDatabase(), plugin, setGamemodeOthers.getTarget());
                         String format = Utils.Chat.formatSetGamemodeOthers(server, staffMember, setGamemodeOthers.getMode(), target);
                         Utils.Chat.sendStaffChatMessage(players, staffMember, format);
                     } else if (packet instanceof FPSCTeleport) {
                         FPSCTeleport teleport = (FPSCTeleport) packet;
-                        FirecraftPlayer target = Utils.getPlayerFromDatabase(plugin.getDatabase(), plugin, teleport.getTarget());
+                        FirecraftPlayer target = Utils.getPlayerFromDatabase(plugin.server, plugin.getDatabase(), plugin, teleport.getTarget());
                         String format = Utils.Chat.formatTeleport(server, staffMember, target);
                         Utils.Chat.sendStaffChatMessage(players, staffMember, format);
                     } else if (packet instanceof FPSCTeleportOthers) {
                         FPSCTeleportOthers teleportOthers = (FPSCTeleportOthers) packet;
-                        FirecraftPlayer target1 = Utils.getPlayerFromDatabase(plugin.getDatabase(), plugin, teleportOthers.getTarget1());
-                        FirecraftPlayer target2 = Utils.getPlayerFromDatabase(plugin.getDatabase(), plugin, teleportOthers.getTarget2());
+                        FirecraftPlayer target1 = Utils.getPlayerFromDatabase(plugin.server, plugin.getDatabase(), plugin, teleportOthers.getTarget1());
+                        FirecraftPlayer target2 = Utils.getPlayerFromDatabase(plugin.server, plugin.getDatabase(), plugin, teleportOthers.getTarget2());
                         String format = Utils.Chat.formatTeleportOthers(server, staffMember, target1, target2);
                         Utils.Chat.sendStaffChatMessage(players, staffMember, format);
                     } else if (packet instanceof FPSCTeleportHere) {
                         FPSCTeleportHere tpHere = (FPSCTeleportHere) packet;
-                        FirecraftPlayer target = Utils.getPlayerFromDatabase(plugin.getDatabase(), plugin, tpHere.getTarget());
+                        FirecraftPlayer target = Utils.getPlayerFromDatabase(plugin.server, plugin.getDatabase(), plugin, tpHere.getTarget());
                         String format = Utils.Chat.formatTeleportHere(server, staffMember, target);
                         Utils.Chat.sendStaffChatMessage(players, staffMember, format);
                     }
