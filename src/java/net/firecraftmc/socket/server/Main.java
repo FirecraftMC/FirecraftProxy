@@ -24,6 +24,7 @@ public class Main extends JavaPlugin implements Listener {
     
     final List<SocketWorker> socketWorkers = new ArrayList<>();
     private ServerSocket serverSocket;
+    public final FirecraftServer server = new FirecraftServer("Socket", ChatColor.DARK_RED);
     
     private final HashMap<UUID, FirecraftPlayer> localPlayers = new HashMap<>();
     
@@ -114,7 +115,7 @@ public class Main extends JavaPlugin implements Listener {
     
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent e) {
-        FirecraftPlayer player = Utils.getPlayerFromDatabase(database, this, e.getPlayer().getUniqueId());
+        FirecraftPlayer player = Utils.getPlayerFromDatabase(server, database, this, e.getPlayer().getUniqueId());
         this.localPlayers.put(player.getUniqueId(), player);
         e.setJoinMessage(player.getDisplayName() + " §ejoined the game.");
     }
@@ -165,7 +166,7 @@ public class Main extends JavaPlugin implements Listener {
                     return true;
                 }
                 
-                FirecraftPlayer target = Utils.getPlayerFromDatabase(database, this, uuid);
+                FirecraftPlayer target = Utils.getPlayerFromDatabase(server, database, this, uuid);
                 
                 if (target == null) {
                     player.sendMessage("&cThere was no player found for the name: " + targetName);
@@ -194,7 +195,7 @@ public class Main extends JavaPlugin implements Listener {
                 database.querySQL("UPDATE `playerdata` SET `mainrank`='" + target.getMainRank().toString() + "' WHERE `uniqueid`='" + uuid.toString().replace("-", "") + "';");
                 String prefix = (!targetRank.equals(Rank.PRIVATE)) ? targetRank.getPrefix() : targetRank.getBaseColor() + "Private";
                 player.sendMessage("&aSuccessfully set §e" + target.getName() + " &a's rank to " + prefix);
-                SocketWorker.sendToAll(new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.DARK_RED), player.getUniqueId(), target.getUniqueId()));
+                SocketWorker.sendToAll(new FPacketRankUpdate(server, player.getUniqueId(), target.getUniqueId()));
             }
         } else if (cmd.getName().equalsIgnoreCase("createprofile")) {
             if (sender instanceof Player) {
@@ -225,7 +226,7 @@ public class Main extends JavaPlugin implements Listener {
                     return true;
                 }
                 
-                FirecraftPlayer created = new FirecraftPlayer(this, uuid, rank);
+                FirecraftPlayer created = new FirecraftPlayer(server, uuid, rank);
                 Utils.addPlayerToDatabase(database, created);
                 player.sendMessage("&aSuccessfully created a profile for " + created.getDisplayName());
                 
