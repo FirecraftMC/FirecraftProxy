@@ -257,7 +257,7 @@ public class Main extends JavaPlugin implements Listener {
     private void checkTempPunishments() {
         getLogger().log(Level.INFO, "Checking temporary punishments.");
         
-        ResultSet punishments = database.querySQL("SELECT * FROM `punishments` WHERE `type`='TEMP_BAN' AND `active`='true';");
+        ResultSet punishments = database.querySQL("SELECT * FROM `punishments` WHERE (`type`='TEMP_BAN' OR `type`='TEMP_MUTE') AND `active`='true';");
         try {
             while (punishments.next()) {
                 int id = punishments.getInt("id");

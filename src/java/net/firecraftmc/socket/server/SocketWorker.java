@@ -42,7 +42,6 @@ public class SocketWorker extends Thread {
                 }
                 
                 if (packet instanceof FPacketServerConnect) {
-                    FPacketServerConnect serverConnect = (FPacketServerConnect) packet;
                     this.server = packet.getServer();
                     String format = Utils.Chat.formatServerConnect(server.getName());
                     plugin.getPlayers().forEach(fp -> fp.sendMessage(format));
@@ -57,6 +56,7 @@ public class SocketWorker extends Thread {
                     FPacketServerPlayerJoin sPJ = (FPacketServerPlayerJoin) packet;
                     FPacketPlayerJoin nPacket = new FPacketPlayerJoin(sPJ.getServer(), sPJ.getUuid());
                     sendToAll(nPacket);
+                    continue;
                 } else if (packet instanceof FPacketPunish) {
                     Utils.Socket.handlePunish(packet, plugin.getDatabase(), plugin.getPlayers());
                 } else if (packet instanceof FPacketStaffChat) {
