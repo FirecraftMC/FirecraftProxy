@@ -58,11 +58,21 @@ public class Main extends JavaPlugin implements Listener {
         });
         thread.start();
         
+        database = new MySQL(getConfig().getString("mysql.user"), getConfig().getString("mysql.database"),
+                getConfig().getString("mysql.password"), getConfig().getInt("mysql.port"), getConfig().getString("mysql.hostname"));
+        database.openConnection();
+        
         new BukkitRunnable() {
             public void run() {
                 checkPlayerInfo();
             }
         }.runTaskTimerAsynchronously(this, 0L, 20 * 60 * 5);
+    
+        new BukkitRunnable() {
+            public void run() {
+                checkTempPunishments();
+            }
+        }.runTaskTimerAsynchronously(this, 0L, 20 * 60);
         
         this.getServer().getPluginManager().registerEvents(this, this);
         
@@ -243,54 +253,61 @@ public class Main extends JavaPlugin implements Listener {
         return true;
     }
     
-    private void checkPlayerInfo() {
-        getLogger().log(Level.INFO, "Loading all player data.");
+    private void checkTempPunishments() {
+        getLogger().log(Level.INFO, "Checking temporary punishments.");
         
-        if (!getConfig().contains("mysql")) {
-            System.out.println("Config does not contain connection info, aborting sql tasks.");
-            getConfig().set("mysql.user", "root");
-            getConfig().set("mysql.database", "players");
-            getConfig().set("mysql.password", "");
-            getConfig().set("mysql.port", 3306);
-            getConfig().set("mysql.hostname", "localhost");
-        } else {
-            database = new MySQL(getConfig().getString("mysql.user"), getConfig().getString("mysql.database"),
-                    getConfig().getString("mysql.password"), getConfig().getInt("mysql.port"), getConfig().getString("mysql.hostname"));
-            database.openConnection();
-            ResultSet players = database.querySQL("SELECT * FROM `playerdata`");
-            try {
-                while (players.next()) {
-                    String u = players.getString("uniqueid");
-                    UUID uuid = Utils.convertToUUID(u);
-                    String lastName = players.getString("lastname");
-                    Rank rank;
-                    try {
-                        rank = Rank.valueOf(players.getString("mainrank"));
-                    } catch (Exception e) {
-                        rank = Rank.PRIVATE;
-                        database.querySQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
-                    }
-                    String mojangName = Utils.Mojang.getNameFromUUID(uuid.toString());
-                    if (mojangName != null && !mojangName.equalsIgnoreCase(lastName)) {
-                        database.querySQL("UPDATE `playerdata` SET `lastname`='" + mojangName + "';");
-                    }
-                    
-                    if (firecraftTeam.contains(uuid)) {
-                        if (!rank.equals(Rank.FIRECRAFT_TEAM)) {
-                            database.querySQL("UPDATE `playerdata` SET `mainrank`='" + Rank.FIRECRAFT_TEAM.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
-                            FPacketRankUpdate rankUpdate = new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.RED), null, uuid);
-                            SocketWorker.sendToAll(rankUpdate);
-                        }
-                    } else if (rank.equals(Rank.FIRECRAFT_TEAM)) {
-                        database.querySQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "'; WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
+        ResultSet punishments = database.querySQL("SELECT * FROM `punishments` WHERE `type`='TEMP_BAN' AND `active`='true';");
+        try {
+            while (punishments.next()) {
+                int id = punishments.getInt("id");
+                long expire = punishments.getLong("expire");
+                if (expire <= System.currentTimeMillis()) {
+                    database.updateSQL("UPDATE `punishments` SET `active`='false' WHERE `id`='" + id + "';");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        getLogger().log(Level.INFO, "Finished checking punishments.");
+    }
+    
+    private void checkPlayerInfo() {
+        getLogger().log(Level.INFO, "Checking all player data.");
+        
+        ResultSet players = database.querySQL("SELECT * FROM `playerdata`");
+        try {
+            while (players.next()) {
+                String u = players.getString("uniqueid");
+                UUID uuid = Utils.convertToUUID(u);
+                String lastName = players.getString("lastname");
+                Rank rank;
+                try {
+                    rank = Rank.valueOf(players.getString("mainrank"));
+                } catch (Exception e) {
+                    rank = Rank.PRIVATE;
+                    database.querySQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
+                }
+                String mojangName = Utils.Mojang.getNameFromUUID(uuid.toString());
+                if (mojangName != null && !mojangName.equalsIgnoreCase(lastName)) {
+                    database.querySQL("UPDATE `playerdata` SET `lastname`='" + mojangName + "';");
+                }
+                
+                if (firecraftTeam.contains(uuid)) {
+                    if (!rank.equals(Rank.FIRECRAFT_TEAM)) {
+                        database.querySQL("UPDATE `playerdata` SET `mainrank`='" + Rank.FIRECRAFT_TEAM.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
                         FPacketRankUpdate rankUpdate = new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.RED), null, uuid);
                         SocketWorker.sendToAll(rankUpdate);
                     }
+                } else if (rank.equals(Rank.FIRECRAFT_TEAM)) {
+                    database.querySQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "'; WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
+                    FPacketRankUpdate rankUpdate = new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.RED), null, uuid);
+                    SocketWorker.sendToAll(rankUpdate);
                 }
-            } catch (Exception e) {
-                System.out.println("There was an error getting player data from the database.");
             }
+        } catch (Exception e) {
+            System.out.println("There was an error getting player data from the database.");
         }
+        
         getLogger().log(Level.INFO, "Finished loading player data.");
     }
     
