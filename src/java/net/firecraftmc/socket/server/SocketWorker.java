@@ -59,6 +59,9 @@ public class SocketWorker extends Thread {
                     continue;
                 } else if (packet instanceof FPacketPunish) {
                     Utils.Socket.handlePunish(packet, plugin.getDatabase(), plugin.getPlayers());
+                } else if (packet instanceof FPacketAcknowledgeWarning) {
+                    String format = Utils.Chat.formatAckWarning(packet.getServer().getName(), ((FPacketAcknowledgeWarning) packet).getWarnedName());
+                    plugin.getPlayers().forEach(p -> p.sendMessage(format));
                 } else if (packet instanceof FPacketStaffChat) {
                     FPacketStaffChat staffChatPacket = ((FPacketStaffChat) packet);
                     FirecraftPlayer staffMember = Utils.getPlayerFromDatabase(plugin.server, plugin.getDatabase(), plugin, staffChatPacket.getPlayer());
