@@ -275,7 +275,7 @@ public class Main extends JavaPlugin implements Listener {
     private void checkPlayerInfo() {
         getLogger().log(Level.INFO, "Checking all player data.");
         
-        ResultSet players = database.querySQL("SELECT * FROM `playerdata`");
+        ResultSet players = database.querySQL("SELECT * FROM `playerdata`;");
         try {
             while (players.next()) {
                 String u = players.getString("uniqueid");
@@ -290,7 +290,7 @@ public class Main extends JavaPlugin implements Listener {
                 }
                 String mojangName = Utils.Mojang.getNameFromUUID(uuid.toString());
                 if (mojangName != null && !mojangName.equalsIgnoreCase(lastName)) {
-                    database.updateSQL("UPDATE `playerdata` SET `lastname`='" + mojangName + "';");
+                    database.updateSQL("UPDATE `playerdata` SET `lastname`='" + mojangName + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
                 }
                 
                 if (firecraftTeam.contains(uuid)) {
