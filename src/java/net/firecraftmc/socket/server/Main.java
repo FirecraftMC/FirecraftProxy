@@ -115,7 +115,7 @@ public class Main extends JavaPlugin implements Listener {
     
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent e) {
-        FirecraftPlayer player = Utils.getPlayerFromDatabase(server, database, this, e.getPlayer().getUniqueId());
+        FirecraftPlayer player = Utils.getPlayerFromDatabase(server, database, e.getPlayer().getUniqueId());
         this.localPlayers.put(player.getUniqueId(), player);
         e.setJoinMessage(player.getDisplayName() + " §ejoined the game.");
     }
@@ -166,7 +166,7 @@ public class Main extends JavaPlugin implements Listener {
                     return true;
                 }
                 
-                FirecraftPlayer target = Utils.getPlayerFromDatabase(server, database, this, uuid);
+                FirecraftPlayer target = Utils.getPlayerFromDatabase(server, database, uuid);
                 
                 if (target == null) {
                     player.sendMessage("&cThere was no player found for the name: " + targetName);
