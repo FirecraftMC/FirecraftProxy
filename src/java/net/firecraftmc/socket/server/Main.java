@@ -286,21 +286,21 @@ public class Main extends JavaPlugin implements Listener {
                     rank = Rank.valueOf(players.getString("mainrank"));
                 } catch (Exception e) {
                     rank = Rank.PRIVATE;
-                    database.querySQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
+                    database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
                 }
                 String mojangName = Utils.Mojang.getNameFromUUID(uuid.toString());
                 if (mojangName != null && !mojangName.equalsIgnoreCase(lastName)) {
-                    database.querySQL("UPDATE `playerdata` SET `lastname`='" + mojangName + "';");
+                    database.updateSQL("UPDATE `playerdata` SET `lastname`='" + mojangName + "';");
                 }
                 
                 if (firecraftTeam.contains(uuid)) {
                     if (!rank.equals(Rank.FIRECRAFT_TEAM)) {
-                        database.querySQL("UPDATE `playerdata` SET `mainrank`='" + Rank.FIRECRAFT_TEAM.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
+                        database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.FIRECRAFT_TEAM.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
                         FPacketRankUpdate rankUpdate = new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.RED), null, uuid);
                         SocketWorker.sendToAll(rankUpdate);
                     }
                 } else if (rank.equals(Rank.FIRECRAFT_TEAM)) {
-                    database.querySQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "'; WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
+                    database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "'; WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
                     FPacketRankUpdate rankUpdate = new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.RED), null, uuid);
                     SocketWorker.sendToAll(rankUpdate);
                 }
