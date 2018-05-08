@@ -34,7 +34,8 @@ public class Main extends JavaPlugin implements Listener {
     private final UUID powercore122 = UUID.fromString("b30f4b1f-4252-45e5-ac2a-1f75ff6f5783");
     private final UUID assassinplayzyt = UUID.fromString("c292df56-5baa-4a11-87a3-cba08ce5f7a6");
     private final UUID jacob_3pot = UUID.fromString("b258795c-c056-4aac-b953-993b930f06a0");
-    private final List<UUID> firecraftTeam = Arrays.asList(firestar311, powercore122, assassinplayzyt, jacob_3pot);
+    private final UUID ko_senpai = UUID.fromString("4d5527f8-df1e-4ecf-9cd7-4ba997b3d9cb");
+    private final List<UUID> firecraftTeam = Arrays.asList(firestar311, powercore122, assassinplayzyt, jacob_3pot, ko_senpai);
     
     public void onEnable() {
         this.saveDefaultConfig();
@@ -192,9 +193,9 @@ public class Main extends JavaPlugin implements Listener {
                     return true;
                 }
                 
-                database.querySQL("UPDATE `playerdata` SET `mainrank`='" + target.getMainRank().toString() + "' WHERE `uniqueid`='" + uuid.toString().replace("-", "") + "';");
+                database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + target.getMainRank().toString() + "' WHERE `uniqueid`='" + uuid.toString().replace("-", "") + "';");
                 String prefix = (!targetRank.equals(Rank.PRIVATE)) ? targetRank.getPrefix() : targetRank.getBaseColor() + "Private";
-                player.sendMessage("&aSuccessfully set §e" + target.getName() + " &a's rank to " + prefix);
+                player.sendMessage("&aSuccessfully set §e" + target.getName() + "&a's rank to " + prefix);
                 SocketWorker.sendToAll(new FPacketRankUpdate(server, player.getUniqueId(), target.getUniqueId()));
             }
         } else if (cmd.getName().equalsIgnoreCase("createprofile")) {
