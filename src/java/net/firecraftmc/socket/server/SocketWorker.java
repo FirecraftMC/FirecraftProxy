@@ -77,12 +77,13 @@ public class SocketWorker extends Thread {
                     } else if (packet instanceof FPStaffChatMessage) {
                         FPStaffChatMessage staffMessage = (FPStaffChatMessage) packet;
                         String format = Utils.Chat.formatStaffMessage(staffMessage.getServer(), staffMember, staffMessage.getMessage());
-                        if (players.isEmpty()) continue;
-                        players.forEach(p -> {
-                            if (Rank.isStaff(p.getMainRank())) {
-                                p.sendMessage(format);
-                            }
-                        });
+                        if (!players.isEmpty()) {
+                            players.forEach(p -> {
+                                if (Rank.isStaff(p.getMainRank())) {
+                                    p.sendMessage(format);
+                                }
+                            });
+                        }
                     } else if (packet instanceof FPStaffChatSetNick) {
                         FPStaffChatSetNick setNick = ((FPStaffChatSetNick) packet);
                         String format = Utils.Chat.formatSetNick(setNick.getServer(), staffMember, setNick.getProfile());
