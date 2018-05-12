@@ -144,8 +144,6 @@ public class SocketWorker extends Thread {
     private void disconnect() {
         System.out.println("Disconnect method called.");
         try {
-            this.inputStream.close();
-            this.outputStream.close();
             this.socket.shutdownInput();
             this.socket.shutdownOutput();
             this.socket.close();
