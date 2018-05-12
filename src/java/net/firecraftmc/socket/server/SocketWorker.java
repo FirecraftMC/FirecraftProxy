@@ -51,6 +51,7 @@ public class SocketWorker extends Thread {
                     plugin.getPlayers().forEach(fp -> fp.sendMessage(format));
                     plugin.removeWorker(this);
                     disconnect();
+                    sendToAll(packet);
                     break;
                 } else if (packet instanceof FPacketServerPlayerJoin) {
                     FPacketServerPlayerJoin sPJ = (FPacketServerPlayerJoin) packet;
@@ -145,6 +146,8 @@ public class SocketWorker extends Thread {
         try {
             this.inputStream.close();
             this.outputStream.close();
+            this.socket.shutdownInput();
+            this.socket.shutdownOutput();
             this.socket.close();
         } catch (IOException e) {
             e.printStackTrace();
