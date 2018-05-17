@@ -1,22 +1,27 @@
 package net.firecraftmc.socket.server;
 
-import net.firecraftmc.shared.classes.*;
+import net.firecraftmc.shared.classes.FirecraftPlayer;
+import net.firecraftmc.shared.classes.FirecraftServer;
+import net.firecraftmc.shared.classes.Messages;
+import net.firecraftmc.shared.classes.Utils;
 import net.firecraftmc.shared.enums.Rank;
 import net.firecraftmc.shared.packets.*;
 import net.firecraftmc.shared.packets.staffchat.*;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Collection;
 
 public class SocketWorker extends Thread {
-    
+
     private static Main plugin;
     private final java.net.Socket socket;
     private FirecraftServer server;
-    
+
     private ObjectOutputStream outputStream;
     private ObjectInputStream inputStream;
-    
+
     SocketWorker(Main main, java.net.Socket socket) {
         plugin = main;
         this.socket = socket;
@@ -27,7 +32,7 @@ public class SocketWorker extends Thread {
             e.printStackTrace();
         }
     }
-    
+
     public void run() {
         try {
             FirecraftPacket packet;
@@ -40,7 +45,7 @@ public class SocketWorker extends Thread {
                     System.out.println("Object received was not a FirecraftPacket.");
                     continue;
                 }
-                
+
                 if (packet instanceof FPacketServerConnect) {
                     this.server = packet.getServer();
                     String format = Utils.Chat.formatServerConnect(server.getName());
@@ -64,7 +69,15 @@ public class SocketWorker extends Thread {
                     Utils.Socket.handleRemovePunish(packet, plugin.getDatabase(), plugin.getPlayers());
                 } else if (packet instanceof FPacketAcknowledgeWarning) {
                     String format = Utils.Chat.formatAckWarning(packet.getServer().getName(), ((FPacketAcknowledgeWarning) packet).getWarnedName());
-                    plugin.getPlayers().forEach(p -> p.sendMessage(format));
+                    plugin.getPlayers().forEach(p -> {
+                        p.sendMessage("");
+                        p.sendMessage(format);
+                        p.sendMessage("");
+                    });
+                } else if (packet instanceof FPacketSocketBroadcast) {
+                    FPacketSocketBroadcast socketBroadcast = ((FPacketSocketBroadcast) packet);
+                    String message = Messages.socketBroadcast(socketBroadcast.getMessage());
+                    plugin.getPlayers().forEach(p -> p.sendMessage(message));
                 } else if (packet instanceof FPacketStaffChat) {
                     FPacketStaffChat staffChatPacket = ((FPacketStaffChat) packet);
                     FirecraftPlayer staffMember = Utils.Database.getPlayerFromDatabase(plugin.server, plugin.getDatabase(), staffChatPacket.getPlayer());
@@ -130,7 +143,7 @@ public class SocketWorker extends Thread {
             e.printStackTrace();
         }
     }
-    
+
     static void sendToAll(FirecraftPacket packet) {
         for (SocketWorker worker : plugin.socketWorkers) {
             try {
@@ -140,7 +153,7 @@ public class SocketWorker extends Thread {
             }
         }
     }
-    
+
     private void disconnect() {
         System.out.println("Disconnect method called.");
         try {
@@ -151,11 +164,11 @@ public class SocketWorker extends Thread {
             e.printStackTrace();
         }
     }
-    
+
     public FirecraftServer getServerName() {
         return server;
     }
-    
+
     boolean isConnected() {
         return socket.isConnected();
     }
