@@ -1,7 +1,9 @@
 package net.firecraftmc.socket.server;
 
 import net.firecraftmc.shared.MySQL;
-import net.firecraftmc.shared.classes.*;
+import net.firecraftmc.shared.classes.FirecraftPlayer;
+import net.firecraftmc.shared.classes.FirecraftServer;
+import net.firecraftmc.shared.classes.Utils;
 import net.firecraftmc.shared.enums.Rank;
 import net.firecraftmc.shared.packets.FPacketRankUpdate;
 import org.bukkit.ChatColor;
@@ -10,7 +12,10 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.*;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
+import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -251,7 +256,7 @@ public class Main extends JavaPlugin implements Listener {
             System.out.println("There was an error getting player data from the database.");
         }
         
-        getLogger().log(Level.INFO, "Finished loading player data.");
+        getLogger().log(Level.INFO, "Finished checking player data.");
     }
     
     public Collection<FirecraftPlayer> getPlayers() {
