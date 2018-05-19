@@ -38,10 +38,9 @@ public class Main extends JavaPlugin implements Listener {
     
     private final UUID firestar311 = UUID.fromString("3f7891ce-5a73-4d52-a2ba-299839053fdc");
     private final UUID powercore122 = UUID.fromString("b30f4b1f-4252-45e5-ac2a-1f75ff6f5783");
-    private final UUID assassinplayzyt = UUID.fromString("c292df56-5baa-4a11-87a3-cba08ce5f7a6");
     private final UUID jacob_3pot = UUID.fromString("b258795c-c056-4aac-b953-993b930f06a0");
     private final UUID ko_senpai = UUID.fromString("4d5527f8-df1e-4ecf-9cd7-4ba997b3d9cb");
-    private final List<UUID> firecraftTeam = Arrays.asList(firestar311, powercore122, assassinplayzyt, jacob_3pot, ko_senpai);
+    private final List<UUID> firecraftTeam = Arrays.asList(firestar311, powercore122, jacob_3pot, ko_senpai);
     
     public void onEnable() {
         this.saveDefaultConfig();
