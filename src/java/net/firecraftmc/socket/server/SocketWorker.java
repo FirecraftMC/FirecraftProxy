@@ -4,7 +4,7 @@ import net.firecraftmc.shared.classes.FirecraftPlayer;
 import net.firecraftmc.shared.classes.FirecraftServer;
 import net.firecraftmc.shared.classes.Messages;
 import net.firecraftmc.shared.classes.Utils;
-import net.firecraftmc.shared.enums.Rank;
+import net.firecraftmc.shared.classes.enums.Rank;
 import net.firecraftmc.shared.packets.*;
 import net.firecraftmc.shared.packets.staffchat.*;
 

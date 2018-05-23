@@ -4,7 +4,7 @@ import net.firecraftmc.shared.MySQL;
 import net.firecraftmc.shared.classes.FirecraftPlayer;
 import net.firecraftmc.shared.classes.FirecraftServer;
 import net.firecraftmc.shared.classes.Utils;
-import net.firecraftmc.shared.enums.Rank;
+import net.firecraftmc.shared.classes.enums.Rank;
 import net.firecraftmc.shared.packets.FPacketRankUpdate;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
