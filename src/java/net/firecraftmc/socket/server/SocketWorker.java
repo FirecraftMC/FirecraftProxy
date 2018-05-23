@@ -13,6 +13,9 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Collection;
 
+/**
+ * Represents a SocketWorker, similar to FirecraftSocket
+ */
 public class SocketWorker extends Thread {
 
     private static Main plugin;

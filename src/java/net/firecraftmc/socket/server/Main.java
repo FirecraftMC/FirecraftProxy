@@ -26,6 +26,10 @@ import java.sql.ResultSet;
 import java.util.*;
 import java.util.logging.Level;
 
+/**
+ * Main class for the Socket Server
+ * Controls the initialization of the socket and handles connections
+ */
 public class Main extends JavaPlugin implements Listener {
     
     final List<SocketWorker> socketWorkers = new ArrayList<>();
