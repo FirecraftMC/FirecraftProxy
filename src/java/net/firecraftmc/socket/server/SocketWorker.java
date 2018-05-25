@@ -81,6 +81,8 @@ public class SocketWorker extends Thread {
                     FPacketSocketBroadcast socketBroadcast = ((FPacketSocketBroadcast) packet);
                     String message = Messages.socketBroadcast(socketBroadcast.getMessage());
                     plugin.getPlayers().forEach(p -> p.sendMessage(message));
+                } else if (packet instanceof FPacketReport) {
+                    Utils.Socket.handleReport(packet, server, plugin.getDatabase(), plugin.getPlayers());
                 } else if (packet instanceof FPacketStaffChat) {
                     FPacketStaffChat staffChatPacket = ((FPacketStaffChat) packet);
                     FirecraftPlayer staffMember = Utils.Database.getPlayerFromDatabase(plugin.server, plugin.getDatabase(), staffChatPacket.getPlayer());
