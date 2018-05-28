@@ -1,4 +1,4 @@
-package net.firecraftmc.socket.server;
+package net.firecraftmc.proxy;
 
 import net.firecraftmc.shared.MySQL;
 import net.firecraftmc.shared.classes.FirecraftPlayer;
@@ -32,7 +32,7 @@ import java.util.logging.Level;
  */
 public class Main extends JavaPlugin implements Listener {
     
-    final List<SocketWorker> socketWorkers = new ArrayList<>();
+    final List<ProxyWorker> proxyWorkers = new ArrayList<>();
     private ServerSocket serverSocket;
     public final FirecraftServer server = new FirecraftServer("Socket", ChatColor.DARK_RED);
     
@@ -59,9 +59,9 @@ public class Main extends JavaPlugin implements Listener {
                 
                 Socket socket;
                 while ((socket = serverSocket.accept()) != null) {
-                    SocketWorker worker = new SocketWorker(this, socket);
+                    ProxyWorker worker = new ProxyWorker(this, socket);
                     worker.start();
-                    socketWorkers.add(worker);
+                    proxyWorkers.add(worker);
                     getLogger().log(Level.INFO, "Received connection from: " + socket);
                 }
             } catch (Exception e) {
@@ -91,11 +91,11 @@ public class Main extends JavaPlugin implements Listener {
         getLogger().log(Level.INFO, "Starting the socket worker check runnable");
         new BukkitRunnable() {
             public void run() {
-                socketWorkers.forEach(sw -> {
+                proxyWorkers.forEach(sw -> {
                     if (!sw.isConnected()) {
                         sw.interrupt();
                         System.out.println("Removed a socket worker.");
-                        socketWorkers.remove(sw);
+                        proxyWorkers.remove(sw);
                     }
                 });
             }
@@ -113,8 +113,8 @@ public class Main extends JavaPlugin implements Listener {
         }
     }
     
-    public void removeWorker(SocketWorker worker) {
-        this.socketWorkers.remove(worker);
+    public void removeWorker(ProxyWorker worker) {
+        this.proxyWorkers.remove(worker);
     }
     
     @EventHandler
@@ -148,44 +148,7 @@ public class Main extends JavaPlugin implements Listener {
     }
     
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
-        if (cmd.getName().equalsIgnoreCase("createprofile")) {
-            if (sender instanceof Player) {
-                FirecraftPlayer player = this.localPlayers.get(((Player) sender).getUniqueId());
-                if (!player.getMainRank().equals(Rank.FIRECRAFT_TEAM)) {
-                    player.sendMessage("&cOnly Firecraft Team members can create player data.");
-                    return true;
-                }
-                
-                if (args.length != 2) {
-                    player.sendMessage("&cInvalid amount of arguments.");
-                    return true;
-                }
-                
-                UUID uuid;
-                try {
-                    uuid = UUID.fromString(args[0]);
-                } catch (Exception e) {
-                    player.sendMessage("&cThat is not a valid UUID.");
-                    return true;
-                }
-                
-                Rank rank;
-                try {
-                    rank = Rank.valueOf(args[1].toUpperCase());
-                } catch (Exception e) {
-                    player.sendMessage("&cThat is not a valid rank.");
-                    return true;
-                }
-                
-                FirecraftPlayer created = new FirecraftPlayer(server, uuid, rank);
-                Utils.Database.addPlayerToDatabase(database, created);
-                player.sendMessage("&aSuccessfully created a profile for " + created.getDisplayName());
-                
-            } else {
-                sender.sendMessage("§cOnly players can use this command.");
-                return true;
-            }
-        } else if (cmd.getName().equalsIgnoreCase("reloaddata")) {
+        if (cmd.getName().equalsIgnoreCase("reloaddata")) {
             if (sender instanceof Player) {
                 FirecraftPlayer player = this.localPlayers.get(((Player) sender).getUniqueId());
                 if (!player.getMainRank().equals(Rank.FIRECRAFT_TEAM)) {
@@ -248,12 +211,12 @@ public class Main extends JavaPlugin implements Listener {
                     if (!rank.equals(Rank.FIRECRAFT_TEAM)) {
                         database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.FIRECRAFT_TEAM.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
                         FPacketRankUpdate rankUpdate = new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.RED), null, uuid);
-                        SocketWorker.sendToAll(rankUpdate);
+                        ProxyWorker.sendToAll(rankUpdate);
                     }
                 } else if (rank.equals(Rank.FIRECRAFT_TEAM)) {
                     database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "'; WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
                     FPacketRankUpdate rankUpdate = new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.RED), null, uuid);
-                    SocketWorker.sendToAll(rankUpdate);
+                    ProxyWorker.sendToAll(rankUpdate);
                 }
             }
         } catch (Exception e) {

@@ -1,4 +1,4 @@
-package net.firecraftmc.socket.server;
+package net.firecraftmc.proxy;
 
 import net.firecraftmc.shared.classes.FirecraftPlayer;
 import net.firecraftmc.shared.classes.FirecraftServer;
@@ -14,9 +14,9 @@ import java.io.ObjectOutputStream;
 import java.util.Collection;
 
 /**
- * Represents a SocketWorker, similar to FirecraftSocket
+ * Represents a ProxyWorker, similar to FirecraftSocket
  */
-public class SocketWorker extends Thread {
+public class ProxyWorker extends Thread {
 
     private static Main plugin;
     private final java.net.Socket socket;
@@ -25,7 +25,7 @@ public class SocketWorker extends Thread {
     private ObjectOutputStream outputStream;
     private ObjectInputStream inputStream;
 
-    SocketWorker(Main main, java.net.Socket socket) {
+    ProxyWorker(Main main, java.net.Socket socket) {
         plugin = main;
         this.socket = socket;
         try {
@@ -150,7 +150,7 @@ public class SocketWorker extends Thread {
     }
 
     static void sendToAll(FirecraftPacket packet) {
-        for (SocketWorker worker : plugin.socketWorkers) {
+        for (ProxyWorker worker : plugin.proxyWorkers) {
             try {
                 worker.outputStream.writeObject(packet);
             } catch (IOException e) {

@@ -1,8 +1,7 @@
-name: FirecraftServerSocket
-main: net.firecraftmc.socket.server.Main
-version: 1.1-ALPHA
+name: FirecraftProxy
+main: Main
+version: 1.2-ALPHA
 load: STARTUP
 author: Firestar311
 commands:
-    createprofile:
     reloaddata:
