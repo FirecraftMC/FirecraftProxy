@@ -161,17 +161,15 @@ public class ProxyWorker extends Thread {
                             });
                         }
                     } else if (packet instanceof FPReportSetOutcome) {
-                        try { //TODO Temporary until a NONE outcome is added
-                            FPReportSetOutcome setOutcome = ((FPReportSetOutcome) packet);
-                            String format = Utils.Chat.formatReportSetOutcome(server.getName(), staffMember.getName(), setOutcome.getId(), setOutcome.getOutcome());
-                            if (!players.isEmpty()) {
-                                players.forEach(p -> {
-                                    if (Rank.isStaff(p.getMainRank())) {
-                                        p.sendMessage(format);
-                                    }
-                                });
-                            }
-                        } catch (Exception e) {}
+                        FPReportSetOutcome setOutcome = ((FPReportSetOutcome) packet);
+                        String format = Utils.Chat.formatReportSetOutcome(server.getName(), staffMember.getName(), setOutcome.getId(), setOutcome.getOutcome());
+                        if (!players.isEmpty()) {
+                            players.forEach(p -> {
+                                if (Rank.isStaff(p.getMainRank())) {
+                                    p.sendMessage(format);
+                                }
+                            });
+                        }
                     } else if (packet instanceof FPReportSetStatus) {
                         FPReportSetStatus setStatus = ((FPReportSetStatus) packet);
                         String format = Utils.Chat.formatReportSetStatus(server.getName(), staffMember.getName(), setStatus.getId(), setStatus.getStatus());
