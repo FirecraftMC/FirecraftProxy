@@ -140,33 +140,48 @@ public class ProxyWorker extends Thread {
                         FirecraftPlayer target = Utils.Database.getPlayerFromDatabase(plugin.server, plugin.getDatabase(), tpHere.getTarget());
                         String format = Utils.Chat.formatTeleportHere(server, staffMember, target);
                         Utils.Chat.sendStaffChatMessage(players, staffMember, format);
+                    } else if (packet instanceof FPReportAssignOthers) {
+                        FPReportAssignOthers assignOthers = ((FPReportAssignOthers) packet);
+                        String format = Utils.Chat.formatReportAssignOthers(server.getName(), staffMember.getName(), assignOthers.getAssignee(), assignOthers.getId());
+                        if (!players.isEmpty()) {
+                            players.forEach(p -> {
+                                if (Rank.isStaff(p.getMainRank())) {
+                                    p.sendMessage(format);
+                                }
+                            });
+                        }
                     } else if (packet instanceof FPReportAssignSelf) {
                         FPReportAssignSelf assignSelf = ((FPReportAssignSelf) packet);
                         String format = Utils.Chat.formatReportAssignSelf(server.getName(), staffMember.getName(), assignSelf.getId());
-                        if (players.isEmpty()) continue;
-                        players.forEach(p -> {
-                            if (Rank.isStaff(p.getMainRank())) {
-                                p.sendMessage(format);
-                            }
-                        });
+                        if (!players.isEmpty()) {
+                            players.forEach(p -> {
+                                if (Rank.isStaff(p.getMainRank())) {
+                                    p.sendMessage(format);
+                                }
+                            });
+                        }
                     } else if (packet instanceof FPReportSetOutcome) {
-                        FPReportSetOutcome setOutcome = ((FPReportSetOutcome) packet);
-                        String format = Utils.Chat.formatReportSetOutcome(server.getName(), staffMember.getName(), setOutcome.getId(), setOutcome.getOutcome());
-                        if (players.isEmpty()) continue;
-                        players.forEach(p -> {
-                            if (Rank.isStaff(p.getMainRank())) {
-                                p.sendMessage(format);
+                        try { //TODO Temporary until a NONE outcome is added
+                            FPReportSetOutcome setOutcome = ((FPReportSetOutcome) packet);
+                            String format = Utils.Chat.formatReportSetOutcome(server.getName(), staffMember.getName(), setOutcome.getId(), setOutcome.getOutcome());
+                            if (!players.isEmpty()) {
+                                players.forEach(p -> {
+                                    if (Rank.isStaff(p.getMainRank())) {
+                                        p.sendMessage(format);
+                                    }
+                                });
                             }
-                        });
+                        } catch (Exception e) {}
                     } else if (packet instanceof FPReportSetStatus) {
                         FPReportSetStatus setStatus = ((FPReportSetStatus) packet);
                         String format = Utils.Chat.formatReportSetStatus(server.getName(), staffMember.getName(), setStatus.getId(), setStatus.getStatus());
-                        if (players.isEmpty()) continue;
-                        players.forEach(p -> {
-                            if (Rank.isStaff(p.getMainRank())) {
-                                p.sendMessage(format);
-                            }
-                        });
+                        if (!players.isEmpty()) {
+                            players.forEach(p -> {
+                                if (Rank.isStaff(p.getMainRank())) {
+                                    p.sendMessage(format);
+                                }
+                            });
+                        }
                     }
                 }
                 sendToAll(packet);
@@ -179,7 +194,8 @@ public class ProxyWorker extends Thread {
     static void sendToAll(FirecraftPacket packet) {
         for (ProxyWorker worker : plugin.proxyWorkers) {
             try {
-                worker.outputStream.writeObject(packet);
+                if (worker.socket.isConnected())
+                    worker.outputStream.writeObject(packet);
             } catch (IOException e) {
                 e.printStackTrace();
             }
