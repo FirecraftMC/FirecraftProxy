@@ -1,6 +1,7 @@
 package net.firecraftmc.proxy;
 
 import net.firecraftmc.shared.MySQL;
+import net.firecraftmc.shared.classes.FirecraftMC;
 import net.firecraftmc.shared.classes.FirecraftPlayer;
 import net.firecraftmc.shared.classes.FirecraftServer;
 import net.firecraftmc.shared.classes.Utils;
@@ -39,13 +40,6 @@ public class Main extends JavaPlugin implements Listener {
     private final HashMap<UUID, FirecraftPlayer> localPlayers = new HashMap<>();
     
     private MySQL database;
-    
-    private final UUID firestar311 = UUID.fromString("3f7891ce-5a73-4d52-a2ba-299839053fdc");
-    private final UUID powercore122 = UUID.fromString("b30f4b1f-4252-45e5-ac2a-1f75ff6f5783");
-    private final UUID assassinplayzyt = UUID.fromString("c292df56-5baa-4a11-87a3-cba08ce5f7a6");
-    private final UUID jacob_3pot = UUID.fromString("b258795c-c056-4aac-b953-993b930f06a0");
-    private final UUID ko_senpai = UUID.fromString("4d5527f8-df1e-4ecf-9cd7-4ba997b3d9cb");
-    private final List<UUID> firecraftTeam = Arrays.asList(firestar311, powercore122, assassinplayzyt, jacob_3pot, ko_senpai);
     
     public void onEnable() {
         this.saveDefaultConfig();
@@ -119,7 +113,7 @@ public class Main extends JavaPlugin implements Listener {
     
     @EventHandler
     public void onPlayerPreJoin(AsyncPlayerPreLoginEvent e) {
-        if (!firecraftTeam.contains(e.getUniqueId())) {
+        if (!FirecraftMC.firecraftTeam.contains(e.getUniqueId())) {
             e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "§4Only Firecraft Team members may join this server.");
         }
     }
@@ -207,7 +201,7 @@ public class Main extends JavaPlugin implements Listener {
                     database.updateSQL("UPDATE `playerdata` SET `lastname`='" + mojangName + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
                 }
                 
-                if (firecraftTeam.contains(uuid)) {
+                if (FirecraftMC.firecraftTeam.contains(uuid)) {
                     if (!rank.equals(Rank.FIRECRAFT_TEAM)) {
                         database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.FIRECRAFT_TEAM.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
                         FPacketRankUpdate rankUpdate = new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.RED), null, uuid);
