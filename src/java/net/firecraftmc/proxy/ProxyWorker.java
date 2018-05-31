@@ -85,7 +85,7 @@ public class ProxyWorker extends Thread {
                     Utils.Socket.handleReport(packet, server, plugin.getDatabase(), plugin.getPlayers());
                 } else if (packet instanceof FPacketStaffChat) {
                     FPacketStaffChat staffChatPacket = ((FPacketStaffChat) packet);
-                    FirecraftPlayer staffMember = Utils.Database.getPlayerFromDatabase(plugin.server, plugin.getDatabase(), staffChatPacket.getPlayer());
+                    FirecraftPlayer staffMember = plugin.getDatabase().getPlayer(plugin.server, staffChatPacket.getPlayer());
                     Collection<FirecraftPlayer> players = plugin.getPlayers();
                     if (packet instanceof FPStaffChatJoin) {
                         String format = Utils.Chat.formatStaffJoin(server, staffMember);
@@ -121,23 +121,23 @@ public class ProxyWorker extends Thread {
                         Utils.Chat.sendStaffChatMessage(players, staffMember, format);
                     } else if (packet instanceof FPSCSetGamemodeOthers) {
                         FPSCSetGamemodeOthers setGamemodeOthers = (FPSCSetGamemodeOthers) packet;
-                        FirecraftPlayer target = Utils.Database.getPlayerFromDatabase(plugin.server, plugin.getDatabase(), setGamemodeOthers.getTarget());
+                        FirecraftPlayer target = plugin.getDatabase().getPlayer(plugin.server, setGamemodeOthers.getTarget());
                         String format = Utils.Chat.formatSetGamemodeOthers(server, staffMember, setGamemodeOthers.getMode(), target);
                         Utils.Chat.sendStaffChatMessage(players, staffMember, format);
                     } else if (packet instanceof FPSCTeleport) {
                         FPSCTeleport teleport = (FPSCTeleport) packet;
-                        FirecraftPlayer target = Utils.Database.getPlayerFromDatabase(plugin.server, plugin.getDatabase(), teleport.getTarget());
+                        FirecraftPlayer target = plugin.getDatabase().getPlayer(plugin.server, teleport.getTarget());
                         String format = Utils.Chat.formatTeleport(server, staffMember, target);
                         Utils.Chat.sendStaffChatMessage(players, staffMember, format);
                     } else if (packet instanceof FPSCTeleportOthers) {
                         FPSCTeleportOthers teleportOthers = (FPSCTeleportOthers) packet;
-                        FirecraftPlayer target1 = Utils.Database.getPlayerFromDatabase(plugin.server, plugin.getDatabase(), teleportOthers.getTarget1());
-                        FirecraftPlayer target2 = Utils.Database.getPlayerFromDatabase(plugin.server, plugin.getDatabase(), teleportOthers.getTarget2());
+                        FirecraftPlayer target1 = plugin.getDatabase().getPlayer(plugin.server, teleportOthers.getTarget1());
+                        FirecraftPlayer target2 = plugin.getDatabase().getPlayer(plugin.server, teleportOthers.getTarget2());
                         String format = Utils.Chat.formatTeleportOthers(server, staffMember, target1, target2);
                         Utils.Chat.sendStaffChatMessage(players, staffMember, format);
                     } else if (packet instanceof FPSCTeleportHere) {
                         FPSCTeleportHere tpHere = (FPSCTeleportHere) packet;
-                        FirecraftPlayer target = Utils.Database.getPlayerFromDatabase(plugin.server, plugin.getDatabase(), tpHere.getTarget());
+                        FirecraftPlayer target = plugin.getDatabase().getPlayer(plugin.server, tpHere.getTarget());
                         String format = Utils.Chat.formatTeleportHere(server, staffMember, target);
                         Utils.Chat.sendStaffChatMessage(players, staffMember, format);
                     } else if (packet instanceof FPReportAssignOthers) {
