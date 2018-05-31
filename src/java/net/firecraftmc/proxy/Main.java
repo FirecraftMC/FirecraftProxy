@@ -1,6 +1,6 @@
 package net.firecraftmc.proxy;
 
-import net.firecraftmc.shared.MySQL;
+import net.firecraftmc.shared.Database;
 import net.firecraftmc.shared.classes.FirecraftMC;
 import net.firecraftmc.shared.classes.FirecraftPlayer;
 import net.firecraftmc.shared.classes.FirecraftServer;
@@ -39,7 +39,7 @@ public class Main extends JavaPlugin implements Listener {
     
     private final HashMap<UUID, FirecraftPlayer> localPlayers = new HashMap<>();
     
-    private MySQL database;
+    private Database database;
     
     public void onEnable() {
         this.saveDefaultConfig();
@@ -64,7 +64,7 @@ public class Main extends JavaPlugin implements Listener {
         });
         thread.start();
         
-        database = new MySQL(getConfig().getString("mysql.user"), getConfig().getString("mysql.database"),
+        database = new Database(getConfig().getString("mysql.user"), getConfig().getString("mysql.database"),
                 getConfig().getString("mysql.password"), getConfig().getInt("mysql.port"), getConfig().getString("mysql.hostname"));
         database.openConnection();
         
@@ -137,7 +137,7 @@ public class Main extends JavaPlugin implements Listener {
         e.setFormat(player.getDisplayName() + "§8: §f" + e.getMessage());
     }
     
-    public MySQL getDatabase() {
+    public Database getDatabase() {
         return database;
     }
     
