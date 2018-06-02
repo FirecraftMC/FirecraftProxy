@@ -35,7 +35,7 @@ public class Main extends JavaPlugin implements Listener {
     
     final List<ProxyWorker> proxyWorkers = new ArrayList<>();
     private ServerSocket serverSocket;
-    public final FirecraftServer server = new FirecraftServer("Socket", ChatColor.DARK_RED);
+    final FirecraftServer server = new FirecraftServer("Socket", ChatColor.DARK_RED);
     
     private final HashMap<UUID, FirecraftPlayer> localPlayers = new HashMap<>();
     
@@ -137,7 +137,7 @@ public class Main extends JavaPlugin implements Listener {
         e.setFormat(player.getDisplayName() + "§8: §f" + e.getMessage());
     }
     
-    public Database getDatabase() {
+    public Database getFCDatabase() {
         return database;
     }
     
