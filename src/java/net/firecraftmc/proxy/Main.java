@@ -67,7 +67,7 @@ public class Main extends JavaPlugin implements Listener {
         database = new Database(getConfig().getString("mysql.user"), getConfig().getString("mysql.database"),
                 getConfig().getString("mysql.password"), getConfig().getInt("mysql.port"), getConfig().getString("mysql.hostname"));
         database.openConnection();
-        
+
         new BukkitRunnable() {
             public void run() {
                 checkPlayerInfo();
@@ -186,29 +186,28 @@ public class Main extends JavaPlugin implements Listener {
         ResultSet players = database.querySQL("SELECT * FROM `playerdata`;");
         try {
             while (players.next()) {
-                String u = players.getString("uniqueid");
-                UUID uuid = Utils.convertToUUID(u);
+                UUID uuid = UUID.fromString(players.getString("uniqueid"));
                 String lastName = players.getString("lastname");
                 Rank rank;
                 try {
                     rank = Rank.valueOf(players.getString("mainrank"));
                 } catch (Exception e) {
                     rank = Rank.PRIVATE;
-                    database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
+                    database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", uuid.toString()));
                 }
                 String mojangName = Utils.Mojang.getNameFromUUID(uuid.toString());
                 if (mojangName != null && !mojangName.equalsIgnoreCase(lastName)) {
-                    database.updateSQL("UPDATE `playerdata` SET `lastname`='" + mojangName + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
+                    database.updateSQL("UPDATE `playerdata` SET `lastname`='" + mojangName + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", uuid.toString()));
                 }
                 
                 if (FirecraftMC.firecraftTeam.contains(uuid)) {
                     if (!rank.equals(Rank.FIRECRAFT_TEAM)) {
-                        database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.FIRECRAFT_TEAM.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
+                        database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.FIRECRAFT_TEAM.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", uuid.toString()));
                         FPacketRankUpdate rankUpdate = new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.RED), null, uuid);
                         ProxyWorker.sendToAll(rankUpdate);
                     }
                 } else if (rank.equals(Rank.FIRECRAFT_TEAM)) {
-                    database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "'; WHERE `uniqueid`='{uuid}';".replace("{uuid}", u));
+                    database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "'; WHERE `uniqueid`='{uuid}';".replace("{uuid}", uuid.toString()));
                     FPacketRankUpdate rankUpdate = new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.RED), null, uuid);
                     ProxyWorker.sendToAll(rankUpdate);
                 }
