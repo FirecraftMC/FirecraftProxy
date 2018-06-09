@@ -192,8 +192,8 @@ public class Main extends JavaPlugin implements Listener {
                 try {
                     rank = Rank.valueOf(players.getString("mainrank"));
                 } catch (Exception e) {
-                    rank = Rank.PRIVATE;
-                    database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", uuid.toString()));
+                    rank = Rank.DEFAULT;
+                    database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.DEFAULT.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", uuid.toString()));
                 }
                 String mojangName = Utils.Mojang.getNameFromUUID(uuid.toString());
                 if (mojangName != null && !mojangName.equalsIgnoreCase(lastName)) {
@@ -207,7 +207,7 @@ public class Main extends JavaPlugin implements Listener {
                         ProxyWorker.sendToAll(rankUpdate);
                     }
                 } else if (rank.equals(Rank.FIRECRAFT_TEAM)) {
-                    database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.PRIVATE.toString() + "'; WHERE `uniqueid`='{uuid}';".replace("{uuid}", uuid.toString()));
+                    database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.DEFAULT.toString() + "'; WHERE `uniqueid`='{uuid}';".replace("{uuid}", uuid.toString()));
                     FPacketRankUpdate rankUpdate = new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.RED), null, uuid);
                     ProxyWorker.sendToAll(rankUpdate);
                 }
