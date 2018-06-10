@@ -2,7 +2,7 @@ package net.firecraftmc.proxy;
 
 import net.firecraftmc.shared.classes.model.Database;
 import net.firecraftmc.shared.classes.FirecraftMC;
-import net.firecraftmc.shared.classes.model.FirecraftPlayer;
+import net.firecraftmc.shared.classes.model.player.FirecraftPlayer;
 import net.firecraftmc.shared.classes.model.FirecraftServer;
 import net.firecraftmc.shared.classes.Utils;
 import net.firecraftmc.shared.classes.enums.Rank;
