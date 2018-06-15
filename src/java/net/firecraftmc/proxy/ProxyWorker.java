@@ -88,10 +88,10 @@ public class ProxyWorker extends Thread {
                     FirecraftPlayer staffMember = plugin.getFCDatabase().getPlayer(staffChatPacket.getPlayer());
                     Collection<FirecraftPlayer> players = plugin.getPlayers();
                     if (packet instanceof FPStaffChatJoin) {
-                        String format = Utils.Chat.formatStaffJoin(server, staffMember);
+                        String format = Utils.Chat.formatStaffJoinLeave(server, staffMember, "joined");
                         Utils.Chat.sendStaffChatMessage(players, staffMember, format);
                     } else if (packet instanceof FPStaffChatQuit) {
-                        String format = Utils.Chat.formatStaffLeave(server, staffMember);
+                        String format = Utils.Chat.formatStaffJoinLeave(server, staffMember, "left");
                         Utils.Chat.sendStaffChatMessage(players, staffMember, format);
                     } else if (packet instanceof FPStaffChatMessage) {
                         FPStaffChatMessage staffMessage = (FPStaffChatMessage) packet;
