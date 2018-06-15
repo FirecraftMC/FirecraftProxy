@@ -1,6 +1,6 @@
 name: FirecraftProxy
 main: net.firecraftmc.proxy.Main
-version: 1.2-ALPHA
+version: 1.3-ALPHA
 load: STARTUP
 author: Firestar311
 commands:

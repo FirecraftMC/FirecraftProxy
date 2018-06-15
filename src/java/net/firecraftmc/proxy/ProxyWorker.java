@@ -51,12 +51,14 @@ public class ProxyWorker extends Thread {
 
                 if (packet instanceof FPacketServerConnect) {
                     this.server = packet.getServer();
-                    String format = Utils.Chat.formatServerConnect(server.getName());
-                    plugin.getPlayers().forEach(fp -> fp.sendMessage(format));
+                    String format = Utils.Chat.formatServerConnect(server);
+                    if (!plugin.getPlayers().isEmpty())
+                        plugin.getPlayers().forEach(fp -> fp.sendMessage(format));
                 } else if (packet instanceof FPacketServerDisconnect) {
                     FPacketServerDisconnect serverDisconnect = (FPacketServerDisconnect) packet;
-                    String format = Utils.Chat.formatServerDisconnect(serverDisconnect.getServer().getName());
-                    plugin.getPlayers().forEach(fp -> fp.sendMessage(format));
+                    String format = Utils.Chat.formatServerDisconnect(serverDisconnect.getServer());
+                    if (!plugin.getPlayers().isEmpty())
+                        plugin.getPlayers().forEach(fp -> fp.sendMessage(format));
                     plugin.removeWorker(this);
                     disconnect();
                     sendToAll(packet);
@@ -72,17 +74,21 @@ public class ProxyWorker extends Thread {
                     Utils.Socket.handleRemovePunish(packet, plugin.getFCDatabase(), plugin.getPlayers());
                 } else if (packet instanceof FPacketAcknowledgeWarning) {
                     String format = Utils.Chat.formatAckWarning(packet.getServer().getName(), ((FPacketAcknowledgeWarning) packet).getWarnedName());
-                    plugin.getPlayers().forEach(p -> {
-                        p.sendMessage("");
-                        p.sendMessage(format);
-                        p.sendMessage("");
-                    });
+                    if (plugin.getPlayers().isEmpty()) {
+                        plugin.getPlayers().forEach(p -> {
+                            p.sendMessage("");
+                            p.sendMessage(format);
+                            p.sendMessage("");
+                        });
+                    }
                 } else if (packet instanceof FPacketSocketBroadcast) {
                     FPacketSocketBroadcast socketBroadcast = ((FPacketSocketBroadcast) packet);
                     String message = Messages.socketBroadcast(socketBroadcast.getMessage());
-                    plugin.getPlayers().forEach(p -> p.sendMessage(message));
+                    if (plugin.getPlayers().isEmpty())
+                        plugin.getPlayers().forEach(p -> p.sendMessage(message));
                 } else if (packet instanceof FPacketReport) {
-                    Utils.Socket.handleReport(packet, server, plugin.getFCDatabase(), plugin.getPlayers());
+                    if (plugin.getPlayers().isEmpty())
+                        Utils.Socket.handleReport(packet, server, plugin.getFCDatabase(), plugin.getPlayers());
                 } else if (packet instanceof FPacketStaffChat) {
                     FPacketStaffChat staffChatPacket = ((FPacketStaffChat) packet);
                     FirecraftPlayer staffMember = plugin.getFCDatabase().getPlayer(staffChatPacket.getPlayer());
@@ -190,7 +196,7 @@ public class ProxyWorker extends Thread {
     }
 
     static void sendToAll(FirecraftPacket packet) {
-        for (ProxyWorker worker : plugin.proxyWorkers) {
+        for (ProxyWorker worker: plugin.proxyWorkers) {
             try {
                 if (worker.socket.isConnected())
                     worker.outputStream.writeObject(packet);
