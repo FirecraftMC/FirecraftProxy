@@ -206,14 +206,16 @@ public class ProxyWorker extends Thread {
         }
     }
 
-    private void disconnect() {
+    private void disconnect() throws IOException {
         System.out.println("Disconnect method called.");
         try {
-            this.socket.shutdownInput();
-            this.socket.shutdownOutput();
-            this.socket.close();
-        } catch (IOException e) {
-            e.printStackTrace();
+            outputStream.close();
+        } finally {
+            try {
+                inputStream.close();
+            } finally {
+                socket.close();
+            }
         }
     }
 
