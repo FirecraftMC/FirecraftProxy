@@ -4,10 +4,8 @@ import net.firecraftmc.shared.classes.FirecraftMC;
 import net.firecraftmc.shared.classes.enums.Rank;
 import net.firecraftmc.shared.classes.model.Database;
 import net.firecraftmc.shared.classes.model.FirecraftServer;
-import net.firecraftmc.shared.classes.model.Skin;
 import net.firecraftmc.shared.classes.model.player.FirecraftPlayer;
 import net.firecraftmc.shared.packets.FPacketRankUpdate;
-import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -42,7 +40,7 @@ public class Main extends JavaPlugin implements Listener {
 
     private static final String profileUrlString = "https://sessionserver.mojang.com/session/minecraft/profile/{uuid}?unsigned=false";
 
-    final List<ProxyWorker> proxyWorkers = new ArrayList<>();
+    volatile List<ProxyWorker> proxyWorkers = new ArrayList<>();
     private ServerSocket serverSocket;
 
     private final HashMap<UUID, FirecraftPlayer> localPlayers = new HashMap<>();
@@ -93,13 +91,20 @@ public class Main extends JavaPlugin implements Listener {
         getLogger().log(Level.INFO, "Starting the socket worker check runnable");
         new BukkitRunnable() {
             public void run() {
-                proxyWorkers.forEach(sw -> {
-                    if (!sw.isConnected()) {
-                        sw.interrupt();
+                Iterator<ProxyWorker> iter = proxyWorkers.iterator();
+
+                while (iter.hasNext()) {
+                    ProxyWorker worker = iter.next();
+                    if (!worker.isConnected()) {
+                        worker.interrupt();
+                        try {
+                            worker.disconnect();
+                        } catch (IOException e) {
+                        }
                         System.out.println("Removed a socket worker.");
-                        proxyWorkers.remove(sw);
+                        iter.remove();
                     }
-                });
+                }
             }
         }.runTaskTimer(this, 0L, 20);
 
@@ -109,6 +114,9 @@ public class Main extends JavaPlugin implements Listener {
     public void onDisable() {
         database.closeConnection();
         try {
+            for (ProxyWorker worker : proxyWorkers) {
+                worker.disconnect();
+            }
             this.serverSocket.close();
         } catch (IOException e) {
             e.printStackTrace();

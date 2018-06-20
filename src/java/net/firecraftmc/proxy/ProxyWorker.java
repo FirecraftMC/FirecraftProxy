@@ -41,7 +41,7 @@ public class ProxyWorker extends Thread {
             FirecraftPacket packet;
             while (socket.isConnected()) {
                 Object obj = this.inputStream.readObject();
-                System.out.println("Received: " + obj);
+                if (obj instanceof Integer) continue;
                 if (obj instanceof FirecraftPacket) {
                     packet = (FirecraftPacket) obj;
                 } else {
@@ -198,15 +198,18 @@ public class ProxyWorker extends Thread {
     static void sendToAll(FirecraftPacket packet) {
         for (ProxyWorker worker: plugin.proxyWorkers) {
             try {
-                if (worker.socket.isConnected())
+                if (worker.isConnected()) {
                     worker.outputStream.writeObject(packet);
+                } else {
+                    worker.disconnect();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    private void disconnect() throws IOException {
+    public void disconnect() throws IOException {
         System.out.println("Disconnect method called.");
         try {
             outputStream.close();
@@ -224,6 +227,15 @@ public class ProxyWorker extends Thread {
     }
 
     boolean isConnected() {
-        return socket.isConnected();
+        boolean connected = true;
+        try {
+            outputStream.writeObject(0);
+        } catch (IOException e) {
+            if (e.getMessage().toLowerCase().contains("socket closed") || e.getMessage().toLowerCase().contains("connection reset") || e.getMessage().toLowerCase().contains("broken pipe")) {
+                connected = false;
+            }
+        }
+
+        return connected;
     }
 }
