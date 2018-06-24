@@ -80,11 +80,14 @@ public class Main extends JavaPlugin implements Listener {
         String ip = null;
         try {
             ip = InetAddress.getLocalHost().getHostAddress();
+            ip = ip.replace("/", "");
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-        server.setIp(ip.replace("/", ""));
-        database.saveServer(server);
+        if (server != null) {
+            server.setIp(ip);
+            database.saveServer(server);
+        }
 
         new BukkitRunnable() {
             public void run() {
