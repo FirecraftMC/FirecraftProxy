@@ -1,7 +1,7 @@
 package net.firecraftmc.proxy;
 
 import net.firecraftmc.shared.classes.model.player.FirecraftPlayer;
-import net.firecraftmc.shared.classes.model.FirecraftServer;
+import net.firecraftmc.shared.classes.model.server.FirecraftServer;
 import net.firecraftmc.shared.classes.Messages;
 import net.firecraftmc.shared.classes.Utils;
 import net.firecraftmc.shared.classes.enums.Rank;
@@ -50,13 +50,13 @@ public class ProxyWorker extends Thread {
                 }
 
                 if (packet instanceof FPacketServerConnect) {
-                    this.server = packet.getServer();
+                    this.server = plugin.getServer(packet.getServerId());
                     String format = Utils.Chat.formatServerConnect(server);
                     if (!plugin.getPlayers().isEmpty())
                         plugin.getPlayers().forEach(fp -> fp.sendMessage(format));
                 } else if (packet instanceof FPacketServerDisconnect) {
                     FPacketServerDisconnect serverDisconnect = (FPacketServerDisconnect) packet;
-                    String format = Utils.Chat.formatServerDisconnect(serverDisconnect.getServer());
+                    String format = Utils.Chat.formatServerDisconnect(plugin.getServer(serverDisconnect.getServerId()));
                     if (!plugin.getPlayers().isEmpty())
                         plugin.getPlayers().forEach(fp -> fp.sendMessage(format));
                     plugin.removeWorker(this);
@@ -65,7 +65,7 @@ public class ProxyWorker extends Thread {
                     break;
                 } else if (packet instanceof FPacketServerPlayerJoin) {
                     FPacketServerPlayerJoin sPJ = (FPacketServerPlayerJoin) packet;
-                    FPacketPlayerJoin nPacket = new FPacketPlayerJoin(sPJ.getServer(), sPJ.getUuid());
+                    FPacketPlayerJoin nPacket = new FPacketPlayerJoin(sPJ.getServerId(), sPJ.getUuid());
                     sendToAll(nPacket);
                     continue;
                 } else if (packet instanceof FPacketPunish) {
@@ -73,7 +73,7 @@ public class ProxyWorker extends Thread {
                 } else if (packet instanceof FPacketPunishRemove) {
                     Utils.Socket.handleRemovePunish(packet, plugin.getFCDatabase(), plugin.getPlayers());
                 } else if (packet instanceof FPacketAcknowledgeWarning) {
-                    String format = Utils.Chat.formatAckWarning(packet.getServer().getName(), ((FPacketAcknowledgeWarning) packet).getWarnedName());
+                    String format = Utils.Chat.formatAckWarning(plugin.getServer(packet.getServerId()).getName(), ((FPacketAcknowledgeWarning) packet).getWarnedName());
                     if (plugin.getPlayers().isEmpty()) {
                         plugin.getPlayers().forEach(p -> {
                             p.sendMessage("");
@@ -101,7 +101,7 @@ public class ProxyWorker extends Thread {
                         Utils.Chat.sendStaffChatMessage(players, staffMember, format);
                     } else if (packet instanceof FPStaffChatMessage) {
                         FPStaffChatMessage staffMessage = (FPStaffChatMessage) packet;
-                        String format = Utils.Chat.formatStaffMessage(staffMessage.getServer(), staffMember, staffMessage.getMessage());
+                        String format = Utils.Chat.formatStaffMessage(plugin.getServer(staffChatPacket.getServerId()), staffMember, staffMessage.getMessage());
                         if (!players.isEmpty()) {
                             players.forEach(p -> {
                                 if (Rank.isStaff(p.getMainRank())) {
@@ -111,15 +111,13 @@ public class ProxyWorker extends Thread {
                         }
                     } else if (packet instanceof FPStaffChatSetNick) {
                         FPStaffChatSetNick setNick = ((FPStaffChatSetNick) packet);
-                        String format = Utils.Chat.formatSetNick(setNick.getServer(), staffMember, setNick.getProfile());
+                        String format = Utils.Chat.formatSetNick(plugin.getServer(staffChatPacket.getServerId()), staffMember, setNick.getProfile());
                         Utils.Chat.sendStaffChatMessage(players, staffMember, format);
                     } else if (packet instanceof FPStaffChatResetNick) {
-                        FPStaffChatResetNick resetNick = ((FPStaffChatResetNick) packet);
-                        String format = Utils.Chat.formatResetNick(resetNick.getServer(), staffMember);
+                        String format = Utils.Chat.formatResetNick(plugin.getServer(staffChatPacket.getServerId()), staffMember);
                         Utils.Chat.sendStaffChatMessage(players, staffMember, format);
                     } else if (packet instanceof FPSCVanishToggle) {
-                        FPSCVanishToggle toggleVanish = ((FPSCVanishToggle) packet);
-                        String format = Utils.Chat.formatVanishToggle(toggleVanish.getServer(), staffMember, staffMember.isVanished());
+                        String format = Utils.Chat.formatVanishToggle(plugin.getServer(staffChatPacket.getServerId()), staffMember, staffMember.isVanished());
                         Utils.Chat.sendStaffChatMessage(players, staffMember, format);
                     } else if (packet instanceof FPSCSetGamemode) {
                         FPSCSetGamemode setGamemode = (FPSCSetGamemode) packet;

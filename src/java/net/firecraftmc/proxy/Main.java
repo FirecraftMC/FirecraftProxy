@@ -1,10 +1,12 @@
 package net.firecraftmc.proxy;
 
 import net.firecraftmc.shared.classes.FirecraftMC;
+import net.firecraftmc.shared.classes.Messages;
 import net.firecraftmc.shared.classes.enums.Rank;
+import net.firecraftmc.shared.classes.enums.ServerType;
 import net.firecraftmc.shared.classes.model.Database;
-import net.firecraftmc.shared.classes.model.FirecraftServer;
 import net.firecraftmc.shared.classes.model.player.FirecraftPlayer;
+import net.firecraftmc.shared.classes.model.server.FirecraftServer;
 import net.firecraftmc.shared.packets.FPacketRankUpdate;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
@@ -25,9 +27,7 @@ import org.json.simple.parser.JSONParser;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.URL;
+import java.net.*;
 import java.sql.ResultSet;
 import java.util.*;
 import java.util.logging.Level;
@@ -46,6 +46,8 @@ public class Main extends JavaPlugin implements Listener {
     private final HashMap<UUID, FirecraftPlayer> localPlayers = new HashMap<>();
 
     private Database database;
+
+    private FirecraftServer server;
 
     public void onEnable() {
         this.saveDefaultConfig();
@@ -73,6 +75,16 @@ public class Main extends JavaPlugin implements Listener {
         database = new Database(getConfig().getString("mysql.user"), getConfig().getString("mysql.database"),
                 getConfig().getString("mysql.password"), getConfig().getInt("mysql.port"), getConfig().getString("mysql.hostname"));
         database.openConnection();
+
+        this.server = database.getServer(getConfig().getString("server"));
+        String ip = null;
+        try {
+            ip = InetAddress.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        server.setIp(ip.replace("/", ""));
+        database.saveServer(server);
 
         new BukkitRunnable() {
             public void run() {
@@ -112,7 +124,6 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     public void onDisable() {
-        database.closeConnection();
         try {
             for (ProxyWorker worker : proxyWorkers) {
                 worker.disconnect();
@@ -121,6 +132,9 @@ public class Main extends JavaPlugin implements Listener {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        server.setIp("");
+        database.saveServer(server);
+        database.closeConnection();
     }
 
     public void removeWorker(ProxyWorker worker) {
@@ -130,7 +144,7 @@ public class Main extends JavaPlugin implements Listener {
     @EventHandler
     public void onPlayerPreJoin(AsyncPlayerPreLoginEvent e) {
         if (!FirecraftMC.firecraftTeam.contains(e.getUniqueId())) {
-            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "§4Only Firecraft Team members may join this server.");
+            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "§4Only Firecraft Team members may join this serverid.");
         }
     }
 
@@ -172,6 +186,47 @@ public class Main extends JavaPlugin implements Listener {
             } else {
                 System.out.println("§cOnly players may reload the player data.");
                 return true;
+            }
+        } else if (cmd.getName().equalsIgnoreCase("firecraftserver")) {
+            if (!(sender instanceof Player)) {
+                sender.sendMessage(Messages.onlyPlayers);
+                return true;
+            }
+
+            FirecraftPlayer player = database.getPlayer(((Player) sender).getUniqueId());
+            if (!player.getMainRank().equals(Rank.FIRECRAFT_TEAM)) {
+                player.sendMessage("<ec>Only members of The Firecraft Team can use that command.");
+                return true;
+            }
+
+            if (!(args.length > 0)) {
+                player.sendMessage("<ec>Invalid amount of arguments");
+                return true;
+            }
+
+            if (args[0].equalsIgnoreCase("create")) {
+                if (!(args.length == 5)) {
+                    player.sendMessage("<ec>Invalid amount of arguments: /<label> <create|c> <id> <name> <color> <type>".replace("<label>", label));
+                    return true;
+                }
+
+                ChatColor color = ChatColor.valueOf(args[3]);
+                ServerType type = ServerType.valueOf(args[4]);
+
+                FirecraftServer server = new FirecraftServer(args[1], args[2], color, type);
+                String ip = null;
+                try {
+                    ip = InetAddress.getLocalHost().getHostAddress();
+                } catch (UnknownHostException e) {
+                    e.printStackTrace();
+                }
+                server.setIp(ip.replace("/", ""));
+
+                database.saveServer(server);
+                this.server = server;
+                player.sendMessage("<nc>Created a server with the id <vc>" + server.getId());
+                getConfig().set("server", server.getId());
+                saveConfig();
             }
         }
 
@@ -236,12 +291,12 @@ public class Main extends JavaPlugin implements Listener {
                 if (FirecraftMC.firecraftTeam.contains(uuid)) {
                     if (!rank.equals(Rank.FIRECRAFT_TEAM)) {
                         database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.FIRECRAFT_TEAM.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", uuid.toString()));
-                        FPacketRankUpdate rankUpdate = new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.RED), null, uuid);
+                        FPacketRankUpdate rankUpdate = new FPacketRankUpdate(server.getId(), null, uuid);
                         ProxyWorker.sendToAll(rankUpdate);
                     }
                 } else if (rank.equals(Rank.FIRECRAFT_TEAM)) {
                     database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.DEFAULT.toString() + "'; WHERE `uniqueid`='{uuid}';".replace("{uuid}", uuid.toString()));
-                    FPacketRankUpdate rankUpdate = new FPacketRankUpdate(new FirecraftServer("Socket", ChatColor.RED), null, uuid);
+                    FPacketRankUpdate rankUpdate = new FPacketRankUpdate(server.getId(), null, uuid);
                     ProxyWorker.sendToAll(rankUpdate);
                 }
             }
@@ -255,5 +310,9 @@ public class Main extends JavaPlugin implements Listener {
 
     public Collection<FirecraftPlayer> getPlayers() {
         return localPlayers.values();
+    }
+
+    public FirecraftServer getServer(String id) {
+        return database.getServer(id);
     }
 }
