@@ -75,6 +75,8 @@ public class FirecraftProxy extends JavaPlugin implements Listener, IFirecraftPr
         });
         thread.start();
 
+        FirecraftMC.setFirecraftProxy(this);
+
         database = new Database(getConfig().getString("mysql.user"), getConfig().getString("mysql.database"),
                 getConfig().getString("mysql.password"), getConfig().getInt("mysql.port"), getConfig().getString("mysql.hostname"));
         database.openConnection();
