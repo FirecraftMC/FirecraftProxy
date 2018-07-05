@@ -2,9 +2,12 @@ package net.firecraftmc.proxy;
 
 import net.firecraftmc.shared.classes.FirecraftMC;
 import net.firecraftmc.shared.classes.Messages;
+import net.firecraftmc.shared.classes.Utils;
 import net.firecraftmc.shared.classes.enums.Rank;
 import net.firecraftmc.shared.classes.enums.ServerType;
+import net.firecraftmc.shared.classes.interfaces.IFirecraftProxy;
 import net.firecraftmc.shared.classes.model.Database;
+import net.firecraftmc.shared.classes.model.ProxyWorker;
 import net.firecraftmc.shared.classes.model.player.FirecraftPlayer;
 import net.firecraftmc.shared.classes.model.server.FirecraftServer;
 import net.firecraftmc.shared.packets.FPacketRankUpdate;
@@ -33,10 +36,10 @@ import java.util.*;
 import java.util.logging.Level;
 
 /**
- * Main class for the Socket Server
+ * FirecraftProxy class for the Socket Server
  * Controls the initialization of the socket and handles connections
  */
-public class Main extends JavaPlugin implements Listener {
+public class FirecraftProxy extends JavaPlugin implements Listener, IFirecraftProxy {
 
     private static final String profileUrlString = "https://sessionserver.mojang.com/session/minecraft/profile/{uuid}?unsigned=false";
 
@@ -172,6 +175,10 @@ public class Main extends JavaPlugin implements Listener {
 
     public Database getFCDatabase() {
         return database;
+    }
+
+    public Collection<ProxyWorker> getProxyWorkers() {
+        return proxyWorkers;
     }
 
     public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
@@ -317,5 +324,41 @@ public class Main extends JavaPlugin implements Listener {
 
     public FirecraftServer getServer(String id) {
         return database.getServer(id);
+    }
+
+    public FirecraftPlayer getPlayer(UUID uuid) {
+        FirecraftPlayer player = localPlayers.get(uuid);
+        if (player == null) player = getFCDatabase().getPlayer(uuid);
+        return player;
+    }
+
+    /**
+     * Gets the FirecraftPlayer given the name
+     *
+     * @param name The name of the player
+     * @return The FirecraftPlayer object from memory or the database
+     */
+    public FirecraftPlayer getPlayer(String name) {
+        for (FirecraftPlayer fp : localPlayers.values()) {
+            if (fp.isNicked()) {
+                if (fp.getNick().getProfile().getName().equalsIgnoreCase(name)) {
+                    return fp;
+                }
+            } else {
+                if (fp.getName().equalsIgnoreCase(name)) {
+                    return fp;
+                }
+            }
+        }
+
+        UUID uuid = Utils.Mojang.getUUIDFromName(name);
+        if (uuid == null) {
+            return null;
+        }
+        return getFCDatabase().getPlayer(uuid);
+    }
+
+    public FirecraftServer getFCServer() {
+        return server;
     }
 }
