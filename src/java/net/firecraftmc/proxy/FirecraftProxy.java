@@ -39,6 +39,7 @@ import java.util.logging.Level;
  * FirecraftProxy class for the Socket Server
  * Controls the initialization of the socket and handles connections
  */
+@SuppressWarnings("MethodOnlyUsedFromInnerClass")
 public class FirecraftProxy extends JavaPlugin implements Listener, IFirecraftProxy {
 
     private static final String profileUrlString = "https://sessionserver.mojang.com/session/minecraft/profile/{uuid}?unsigned=false";
