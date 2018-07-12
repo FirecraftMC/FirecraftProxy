@@ -1,8 +1,6 @@
 package net.firecraftmc.proxy;
 
-import net.firecraftmc.shared.classes.FirecraftMC;
-import net.firecraftmc.shared.classes.Messages;
-import net.firecraftmc.shared.classes.Utils;
+import net.firecraftmc.shared.classes.*;
 import net.firecraftmc.shared.classes.enums.Rank;
 import net.firecraftmc.shared.classes.enums.ServerType;
 import net.firecraftmc.shared.classes.interfaces.IFirecraftProxy;
@@ -17,19 +15,14 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.event.player.AsyncPlayerPreLoginEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.*;
 import java.net.*;
 import java.sql.ResultSet;
 import java.util.*;
@@ -342,16 +335,9 @@ public class FirecraftProxy extends JavaPlugin implements Listener, IFirecraftPr
      * @return The FirecraftPlayer object from memory or the database
      */
     public FirecraftPlayer getPlayer(String name) {
-        for (FirecraftPlayer fp : localPlayers.values()) {
-            if (fp.isNicked()) {
-                if (fp.getNick().getProfile().getName().equalsIgnoreCase(name)) {
-                    return fp;
-                }
-            } else {
-                if (fp.getName().equalsIgnoreCase(name)) {
-                    return fp;
-                }
-            }
+        FirecraftPlayer target = Utils.getPlayer(name, localPlayers.values());
+        if (target != null) {
+            return target;
         }
 
         UUID uuid = Utils.Mojang.getUUIDFromName(name);
