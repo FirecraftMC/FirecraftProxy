@@ -3,12 +3,12 @@ package net.firecraftmc.proxy;
 import net.firecraftmc.shared.classes.*;
 import net.firecraftmc.shared.classes.enums.Rank;
 import net.firecraftmc.shared.classes.enums.ServerType;
-import net.firecraftmc.shared.classes.interfaces.IFirecraftProxy;
 import net.firecraftmc.shared.classes.model.Database;
 import net.firecraftmc.shared.classes.model.ProxyWorker;
 import net.firecraftmc.shared.classes.model.player.FirecraftPlayer;
 import net.firecraftmc.shared.classes.model.server.FirecraftServer;
 import net.firecraftmc.shared.packets.FPacketRankUpdate;
+import net.firecraftmc.shared.plugin.IFirecraftProxy;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -328,12 +328,6 @@ public class FirecraftProxy extends JavaPlugin implements Listener, IFirecraftPr
         return player;
     }
 
-    /**
-     * Gets the FirecraftPlayer given the name
-     *
-     * @param name The name of the player
-     * @return The FirecraftPlayer object from memory or the database
-     */
     public FirecraftPlayer getPlayer(String name) {
         FirecraftPlayer target = Utils.getPlayer(name, localPlayers.values());
         if (target != null) {
@@ -349,5 +343,10 @@ public class FirecraftProxy extends JavaPlugin implements Listener, IFirecraftPr
 
     public FirecraftServer getFCServer() {
         return server;
+    }
+    
+    @Override
+    public FirecraftServer getFCServer(String id) {
+        return database.getServer(id);
     }
 }
