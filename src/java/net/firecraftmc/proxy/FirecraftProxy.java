@@ -1,14 +1,16 @@
 package net.firecraftmc.proxy;
 
-import net.firecraftmc.shared.classes.*;
-import net.firecraftmc.shared.classes.enums.Rank;
-import net.firecraftmc.shared.classes.enums.ServerType;
-import net.firecraftmc.shared.classes.model.Database;
-import net.firecraftmc.shared.classes.model.ProxyWorker;
-import net.firecraftmc.shared.classes.model.player.FirecraftPlayer;
-import net.firecraftmc.shared.classes.model.server.FirecraftServer;
-import net.firecraftmc.shared.packets.FPacketRankUpdate;
-import net.firecraftmc.shared.plugin.IFirecraftProxy;
+import net.firecraftmc.api.FirecraftAPI;
+import net.firecraftmc.api.enums.Rank;
+import net.firecraftmc.api.enums.ServerType;
+import net.firecraftmc.api.model.Database;
+import net.firecraftmc.api.model.ProxyWorker;
+import net.firecraftmc.api.model.player.FirecraftPlayer;
+import net.firecraftmc.api.model.server.FirecraftServer;
+import net.firecraftmc.api.packets.FPacketRankUpdate;
+import net.firecraftmc.api.plugin.IFirecraftProxy;
+import net.firecraftmc.api.util.Messages;
+import net.firecraftmc.api.util.Utils;
 import org.bukkit.ChatColor;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
@@ -69,7 +71,7 @@ public class FirecraftProxy extends JavaPlugin implements Listener, IFirecraftPr
         });
         thread.start();
 
-        FirecraftMC.setFirecraftProxy(this);
+        FirecraftAPI.setFirecraftProxy(this);
 
         database = new Database(getConfig().getString("mysql.user"), getConfig().getString("mysql.database"),
                 getConfig().getString("mysql.password"), getConfig().getInt("mysql.port"), getConfig().getString("mysql.hostname"));
@@ -145,7 +147,7 @@ public class FirecraftProxy extends JavaPlugin implements Listener, IFirecraftPr
 
     @EventHandler
     public void onPlayerPreJoin(AsyncPlayerPreLoginEvent e) {
-        if (!FirecraftMC.firecraftTeam.contains(e.getUniqueId())) {
+        if (!FirecraftAPI.firecraftTeam.contains(e.getUniqueId())) {
             e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "§4Only Firecraft Team members may join this serverid.");
         }
     }
@@ -294,7 +296,7 @@ public class FirecraftProxy extends JavaPlugin implements Listener, IFirecraftPr
                 String skinString = sN + ":" + sV + ":" + sS;
                 database.updateSQL("UPDATE `playerdata` SET `lastname`='{name}',`skin`='{skin}' WHERE `uniqueid`='{uuid}';".replace("{skin}", skinString).replace("{uuid}", uuid.toString()).replace("{name}", n));
 
-                if (FirecraftMC.firecraftTeam.contains(uuid)) {
+                if (FirecraftAPI.firecraftTeam.contains(uuid)) {
                     if (!rank.equals(Rank.FIRECRAFT_TEAM)) {
                         database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.FIRECRAFT_TEAM.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", uuid.toString()));
                         FPacketRankUpdate rankUpdate = new FPacketRankUpdate(server.getId(), null, uuid);
