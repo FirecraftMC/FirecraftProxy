@@ -7,8 +7,11 @@ import net.firecraftmc.api.model.Database;
 import net.firecraftmc.api.model.ProxyWorker;
 import net.firecraftmc.api.model.player.FirecraftPlayer;
 import net.firecraftmc.api.model.server.FirecraftServer;
+import net.firecraftmc.api.packets.FPacketMuteExpire;
 import net.firecraftmc.api.packets.FPacketRankUpdate;
 import net.firecraftmc.api.plugin.IFirecraftProxy;
+import net.firecraftmc.api.punishments.Punishment;
+import net.firecraftmc.api.punishments.Punishment.Type;
 import net.firecraftmc.api.util.Messages;
 import net.firecraftmc.api.util.Utils;
 import org.bukkit.ChatColor;
@@ -251,6 +254,11 @@ public class FirecraftProxy extends JavaPlugin implements Listener, IFirecraftPr
                 long expire = punishments.getLong("expire");
                 if (expire <= System.currentTimeMillis()) {
                     database.updateSQL("UPDATE `punishments` SET `active`='false' WHERE `id`='" + id + "';");
+                    Punishment.Type type = Punishment.Type.valueOf(punishments.getString("type"));
+                    if (type.equals(Type.TEMP_MUTE)) {
+                        FPacketMuteExpire muteExpire = new FPacketMuteExpire(server.getId(), id);
+                        ProxyWorker.sendToAll(muteExpire);
+                    }
                 }
             }
         } catch (Exception e) {
