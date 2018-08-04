@@ -3,6 +3,7 @@ package net.firecraftmc.proxy;
 import net.firecraftmc.api.FirecraftAPI;
 import net.firecraftmc.api.enums.Rank;
 import net.firecraftmc.api.enums.ServerType;
+import net.firecraftmc.api.menus.MenuManager;
 import net.firecraftmc.api.model.Database;
 import net.firecraftmc.api.model.ProxyWorker;
 import net.firecraftmc.api.model.player.FirecraftPlayer;
@@ -41,15 +42,12 @@ import java.util.logging.Level;
 public class FirecraftProxy extends JavaPlugin implements Listener, IFirecraftProxy {
 
     private static final String profileUrlString = "https://sessionserver.mojang.com/session/minecraft/profile/{uuid}?unsigned=false";
-
     volatile List<ProxyWorker> proxyWorkers = new ArrayList<>();
     private ServerSocket serverSocket;
-
     private final HashMap<UUID, FirecraftPlayer> localPlayers = new HashMap<>();
-
     private Database database;
-
     private FirecraftServer server;
+    private MenuManager menuManager;
 
     public void onEnable() {
         this.saveDefaultConfig();
@@ -126,6 +124,8 @@ public class FirecraftProxy extends JavaPlugin implements Listener, IFirecraftPr
                 }
             }
         }.runTaskTimer(this, 0L, 20);
+        
+        this.menuManager = new MenuManager(this);
 
         getLogger().log(Level.INFO, "Successfully loaded the plugin.");
     }
@@ -177,7 +177,11 @@ public class FirecraftProxy extends JavaPlugin implements Listener, IFirecraftPr
     public Database getFCDatabase() {
         return database;
     }
-
+    
+    public MenuManager getMenuManager() {
+        return menuManager;
+    }
+    
     public Collection<ProxyWorker> getProxyWorkers() {
         return proxyWorkers;
     }
