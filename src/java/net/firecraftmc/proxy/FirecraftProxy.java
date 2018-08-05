@@ -42,7 +42,7 @@ import java.util.logging.Level;
 public class FirecraftProxy extends JavaPlugin implements Listener, IFirecraftProxy {
 
     private static final String profileUrlString = "https://sessionserver.mojang.com/session/minecraft/profile/{uuid}?unsigned=false";
-    volatile List<ProxyWorker> proxyWorkers = new ArrayList<>();
+    final List<ProxyWorker> proxyWorkers = new ArrayList<>();
     private ServerSocket serverSocket;
     private final HashMap<UUID, FirecraftPlayer> localPlayers = new HashMap<>();
     private Database database;
