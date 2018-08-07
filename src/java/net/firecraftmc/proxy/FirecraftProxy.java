@@ -9,7 +9,6 @@ import net.firecraftmc.api.model.ProxyWorker;
 import net.firecraftmc.api.model.player.FirecraftPlayer;
 import net.firecraftmc.api.model.server.FirecraftServer;
 import net.firecraftmc.api.packets.FPacketMuteExpire;
-import net.firecraftmc.api.packets.FPacketRankUpdate;
 import net.firecraftmc.api.plugin.IFirecraftProxy;
 import net.firecraftmc.api.punishments.Punishment;
 import net.firecraftmc.api.punishments.Punishment.Type;
@@ -150,9 +149,7 @@ public class FirecraftProxy extends JavaPlugin implements Listener, IFirecraftPr
 
     @EventHandler
     public void onPlayerPreJoin(AsyncPlayerPreLoginEvent e) {
-        if (!FirecraftAPI.firecraftTeam.contains(e.getUniqueId())) {
-            e.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER, "§4Only Firecraft Team members may join this serverid.");
-        }
+        //TODO Redo this
     }
 
     @EventHandler
@@ -307,18 +304,6 @@ public class FirecraftProxy extends JavaPlugin implements Listener, IFirecraftPr
 
                 String skinString = sN + ":" + sV + ":" + sS;
                 database.updateSQL("UPDATE `playerdata` SET `lastname`='{name}',`skin`='{skin}' WHERE `uniqueid`='{uuid}';".replace("{skin}", skinString).replace("{uuid}", uuid.toString()).replace("{name}", n));
-
-                if (FirecraftAPI.firecraftTeam.contains(uuid)) {
-                    if (!rank.equals(Rank.FIRECRAFT_TEAM)) {
-                        database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.FIRECRAFT_TEAM.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", uuid.toString()));
-                        FPacketRankUpdate rankUpdate = new FPacketRankUpdate(server.getId(), null, uuid);
-                        ProxyWorker.sendToAll(rankUpdate);
-                    }
-                } else if (rank.equals(Rank.FIRECRAFT_TEAM)) {
-                    database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.DEFAULT.toString() + "'; WHERE `uniqueid`='{uuid}';".replace("{uuid}", uuid.toString()));
-                    FPacketRankUpdate rankUpdate = new FPacketRankUpdate(server.getId(), null, uuid);
-                    ProxyWorker.sendToAll(rankUpdate);
-                }
             }
         } catch (Exception e) {
             System.out.println("There was an error getting player data from the database.");
