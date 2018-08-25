@@ -275,11 +275,9 @@ public class FirecraftProxy extends JavaPlugin implements Listener, IFirecraftPr
         try {
             while (players.next()) {
                 UUID uuid = UUID.fromString(players.getString("uniqueid"));
-                Rank rank;
                 try {
-                    rank = Rank.valueOf(players.getString("mainrank"));
+                    Rank.valueOf(players.getString("mainrank"));
                 } catch (Exception e) {
-                    rank = Rank.DEFAULT;
                     database.updateSQL("UPDATE `playerdata` SET `mainrank`='" + Rank.DEFAULT.toString() + "' WHERE `uniqueid`='{uuid}';".replace("{uuid}", uuid.toString()));
                 }
 
